@@ -20,7 +20,7 @@ import Affjax.RequestBody as Affjax.RequestBody
 import Affjax.RequestHeader as Affjax.RequestHeader
 import Affjax.ResponseFormat (string) as Affjax.ResponseFormat
 import Affjax.StatusCode (StatusCode(StatusCode))
-import Cardano.Kupmios.Affjax (request) as Affjax
+import Cardano.Provider.Affjax (request) as Affjax
 import Cardano.Kupmios.Logging (logTrace')
 import Cardano.Kupmios.Ogmios.Types
   ( AdditionalUtxoSet

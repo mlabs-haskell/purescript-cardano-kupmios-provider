@@ -1,6 +1,6 @@
 SHELL := bash
 .ONESHELL:
-.PHONY: check-format format
+.PHONY: check-format format build
 .SHELLFLAGS := -eu -o pipefail -c
 
 ps-sources := $(shell fd --no-ignore-parent -epurs)
@@ -28,9 +28,8 @@ check-format: check-explicit-exports
 format:
 	@purs-tidy format-in-place ${ps-sources}
 	nixpkgs-fmt ${nix-sources}
-	prettier -w ${js-sources}
+	# prettier -w ${js-sources}
 	make check-explicit-exports
-
 
 build:
 	@spago build --purs-args ${purs-args}

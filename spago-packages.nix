@@ -173,18 +173,6 @@ let
         installPhase = "ln -s $src $out";
       };
 
-    "bignumber" = pkgs.stdenv.mkDerivation {
-        name = "bignumber";
-        version = "760d11b41ece31b8cdd3c53349c5c2fd48d3ff89";
-        src = pkgs.fetchgit {
-          url = "https://github.com/mlabs-haskell/purescript-bignumber";
-          rev = "760d11b41ece31b8cdd3c53349c5c2fd48d3ff89";
-          sha256 = "03py821gnkgi5p7zaxwr4rqsiv67v83y5c04i6x4v15nr6aaf7vz";
-        };
-        phases = "installPhase";
-        installPhase = "ln -s $src $out";
-      };
-
     "bytearrays" = pkgs.stdenv.mkDerivation {
         name = "bytearrays";
         version = "v1.0.0";
@@ -564,18 +552,6 @@ let
           url = "https://github.com/purescript/purescript-gen.git";
           rev = "9fbcc2a1261c32e30d79c5418edef4d96fe76931";
           sha256 = "0kajzcp9a8dmqvb3ga27hlf18m2smbp98a0bmzzb9vv156ckw0b4";
-        };
-        phases = "installPhase";
-        installPhase = "ln -s $src $out";
-      };
-
-    "heterogeneous" = pkgs.stdenv.mkDerivation {
-        name = "heterogeneous";
-        version = "v0.6.0";
-        src = pkgs.fetchgit {
-          url = "https://github.com/natefaubion/purescript-heterogeneous.git";
-          rev = "5b7542bdd9547c5aef95b8878f103f0ce4ee1383";
-          sha256 = "0ff1wjq2ayhy67ydggbb2qlzbhvmv1m1z8dcp48p9zhxiq9fpfsz";
         };
         phases = "installPhase";
         installPhase = "ln -s $src $out";
@@ -1260,18 +1236,6 @@ let
           url = "https://github.com/rowtype-yoga/purescript-untagged-union.git";
           rev = "ed8262a966e15e751322c327e2759a9b9c0ef3f3";
           sha256 = "163blv01abd3dhcpqz499851lhwnmb4dlfbzkr3cs53d30w3yldx";
-        };
-        phases = "installPhase";
-        installPhase = "ln -s $src $out";
-      };
-
-    "variant" = pkgs.stdenv.mkDerivation {
-        name = "variant";
-        version = "v8.0.0";
-        src = pkgs.fetchgit {
-          url = "https://github.com/natefaubion/purescript-variant.git";
-          rev = "8b2bd73a4202257d80a955c4dd36f6055f149823";
-          sha256 = "18nyxnaqqg1zzydwd2hh9hbzr31j509g5yb1lnd0m60bma4l9h5g";
         };
         phases = "installPhase";
         installPhase = "ln -s $src $out";

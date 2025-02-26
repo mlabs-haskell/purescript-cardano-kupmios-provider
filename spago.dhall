@@ -2,7 +2,6 @@
 , dependencies =
   [ "aeson"
   , "aff"
-  , "aff-promise"
   , "affjax"
   , "arrays"
   , "bifunctors"

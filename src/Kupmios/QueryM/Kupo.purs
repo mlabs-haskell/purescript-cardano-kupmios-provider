@@ -70,7 +70,7 @@ import Control.Monad.Error.Class (throwError)
 import Control.Monad.Except.Trans (ExceptT(ExceptT), except, runExceptT)
 import Control.Monad.Reader.Class (asks)
 import Control.Parallel (parTraverse)
-import Cardano.Kupmios.Affjax (request) as Affjax
+import Cardano.Provider.Affjax (request) as Affjax
 import Cardano.Kupmios.QueryM (QueryM, handleAffjaxResponse)
 import Cardano.Provider.ServerConfig (ServerConfig, mkHttpUrl)
 import Data.Array (uncons)
