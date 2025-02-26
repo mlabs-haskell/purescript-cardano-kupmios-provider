@@ -1,4 +1,4 @@
-module Cardano.Kupmios.QueryM.Ogmios
+module Cardano.Kupmios.Ogmios
   ( getSystemStartTime
   , getChainTip
   , currentEpoch
@@ -31,7 +31,7 @@ import Control.Monad.Reader.Class (asks)
 import Cardano.Kupmios.Affjax (request) as Affjax
 import Cardano.Kupmios.QueryM (QueryM)
 import Cardano.Kupmios.QueryM.HttpUtils (handleAffjaxResponseGeneric)
-import Cardano.Kupmios.QueryM.Ogmios.Types
+import Cardano.Kupmios.Ogmios.Types
   ( class DecodeOgmios
   , ChainTipQR(CtChainPoint, CtChainOrigin)
   , CurrentEpoch

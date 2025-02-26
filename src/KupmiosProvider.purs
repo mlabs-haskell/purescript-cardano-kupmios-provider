@@ -9,7 +9,7 @@ import Cardano.Kupmios.QueryM
   , QueryMT(QueryMT)
   , handleAffjaxResponse
   ) as X
-import Cardano.Kupmios.QueryM.Kupo
+import Cardano.Kupmios.Kupo
   ( getDatumByHash
   , getOutputAddressesByTxHash
   , getScriptByHash
@@ -19,7 +19,7 @@ import Cardano.Kupmios.QueryM.Kupo
   , isTxConfirmedAff
   , utxosAt
   ) as X
-import Cardano.Kupmios.QueryM.Ogmios
+import Cardano.Kupmios.Ogmios
   ( currentEpoch
   , delegationsAndRewards
   , eraSummaries
@@ -31,20 +31,26 @@ import Cardano.Kupmios.QueryM.Ogmios
   , submitTxOgmios
   ) as X
 
-import Cardano.Kupmios.QueryM.CurrentEpoch
+import Cardano.Kupmios.Ogmios.CurrentEpoch
   ( getCurrentEpoch
   ) as X
 
-import Cardano.Kupmios.QueryM.EraSummaries
+import Cardano.Kupmios.Ogmios.EraSummaries
   ( getEraSummaries
   ) as X
 
-import Cardano.Kupmios.QueryM.Pools
+import Cardano.Kupmios.Ogmios.Pools
   ( getPoolIds
   , getPoolParameters
   , getPoolsParameters
   , getPubKeyHashDelegationsAndRewards
   , getValidatorHashDelegationsAndRewards
+  ) as X
+
+import Cardano.Kupmios.Ogmios.Helpers
+  ( sysStartFromOgmiosTimestamp
+  , sysStartFromOgmiosTimestampUnsafe
+  , sysStartToOgmiosTimestamp
   ) as X
 
 import Cardano.Kupmios.Logging (Logger, mkLogger, logTrace') as X

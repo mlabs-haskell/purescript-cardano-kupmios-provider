@@ -1,4 +1,4 @@
-module Cardano.Kupmios.QueryM.Kupo
+module Cardano.Kupmios.Kupo
   ( getDatumByHash
   , getScriptByHash
   , getTxAuxiliaryData

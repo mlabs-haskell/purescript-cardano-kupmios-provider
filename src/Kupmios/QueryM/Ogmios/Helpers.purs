@@ -1,4 +1,4 @@
-module Cardano.Kupmios.QueryM.Ogmios.Helpers
+module Cardano.Kupmios.Ogmios.Helpers
   ( sysStartFromOgmiosTimestamp
   , sysStartFromOgmiosTimestampUnsafe
   , sysStartToOgmiosTimestamp

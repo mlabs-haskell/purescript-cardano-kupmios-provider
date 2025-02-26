@@ -1,6 +1,6 @@
 -- | Provides types and instances to create Ogmios requests and decode
 -- | its responses.
-module Cardano.Kupmios.QueryM.Ogmios.Types
+module Cardano.Kupmios.Ogmios.Types
   ( ChainOrigin(ChainOrigin)
   , ChainPoint
   , ChainTipQR(CtChainOrigin, CtChainPoint)
@@ -41,7 +41,7 @@ import Prelude
 import Aeson (class DecodeAeson, class EncodeAeson, Aeson, JsonDecodeError(TypeMismatch, MissingValue, AtKey), caseAesonArray, caseAesonObject, caseAesonString, decodeAeson, encodeAeson, fromArray, fromString, getField, getFieldOptional, getFieldOptional', isNull, printJsonDecodeError, stringifyAeson, toString, (.:), (.:?))
 import Cardano.AsCbor (decodeCbor, encodeCbor)
 import Foreign.Object as Obj
-import Cardano.Kupmios.QueryM.Ogmios.Helpers (sysStartFromOgmiosTimestamp, sysStartToOgmiosTimestamp)
+import Cardano.Kupmios.Ogmios.Helpers (sysStartFromOgmiosTimestamp, sysStartToOgmiosTimestamp)
 import Cardano.Provider.TxEvaluation (ExecutionUnits, OgmiosTxOut, OgmiosTxOutRef, RedeemerPointer, ScriptFailure(InternalLedgerTypeConversionError, NoCostModelForLanguage, UnknownInputReferencedByRedeemer, MissingRequiredDatums, ExtraRedeemers, NonScriptInputReferencedByRedeemer, ValidatorFailed, MissingRequiredScripts), TxEvaluationFailure(UnparsedError, AdditionalUtxoOverlap, ScriptFailures), TxEvaluationR(TxEvaluationR), TxEvaluationResult(TxEvaluationResult))
 import Cardano.Serialization.Lib (fromBytes, ipv4_new)
 import Cardano.Types (BigNum(BigNum), Language(PlutusV3, PlutusV2, PlutusV1), RedeemerTag, VRFKeyHash(VRFKeyHash))

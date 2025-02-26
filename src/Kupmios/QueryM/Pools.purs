@@ -1,4 +1,4 @@
-module Cardano.Kupmios.QueryM.Pools
+module Cardano.Kupmios.Ogmios.Pools
   ( getPoolIds
   , getPoolParameters
   , getPoolsParameters
@@ -11,8 +11,8 @@ import Prelude
 import Cardano.AsCbor (encodeCbor)
 import Cardano.Kupmios.Helpers (liftM)
 import Cardano.Kupmios.QueryM (QueryM)
-import Cardano.Kupmios.QueryM.Ogmios as Ogmios
-import Cardano.Kupmios.QueryM.Ogmios.Types (PoolParameters, pprintOgmiosDecodeError)
+import Cardano.Kupmios.Ogmios as Ogmios
+import Cardano.Kupmios.Ogmios.Types (PoolParameters, pprintOgmiosDecodeError)
 import Cardano.Types (PoolParams, PoolPubKeyHash, StakePubKeyHash)
 import Cardano.Types.DelegationsAndRewards (DelegationsAndRewards)
 import Cardano.Types.Ed25519KeyHash (toBech32Unsafe) as Ed25519KeyHash
