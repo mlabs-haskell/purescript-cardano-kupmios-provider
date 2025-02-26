@@ -31,3 +31,6 @@ format:
 	prettier -w ${js-sources}
 	make check-explicit-exports
 
+
+build:
+	@spago build --purs-args ${purs-args}

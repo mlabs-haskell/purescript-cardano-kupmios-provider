@@ -20,19 +20,11 @@ import Affjax.RequestBody as Affjax.RequestBody
 import Affjax.RequestHeader as Affjax.RequestHeader
 import Affjax.ResponseFormat (string) as Affjax.ResponseFormat
 import Affjax.StatusCode (StatusCode(StatusCode))
-import Cardano.Provider.TxEvaluation (OgmiosTxOut, OgmiosTxOutRef)
-import Cardano.Provider.TxEvaluation as Provider
-import Cardano.Types.CborBytes (CborBytes)
-import Cardano.Types.Chain as Chain
-import Cardano.Types.TransactionHash (TransactionHash)
-import Cardano.Kupmios.Logging (logTrace')
-import Control.Monad.Error.Class (class MonadThrow, throwError)
-import Control.Monad.Reader.Class (asks)
 import Cardano.Kupmios.Affjax (request) as Affjax
-import Cardano.Kupmios.QueryM (QueryM)
-import Cardano.Kupmios.QueryM.HttpUtils (handleAffjaxResponseGeneric)
+import Cardano.Kupmios.Logging (logTrace')
 import Cardano.Kupmios.Ogmios.Types
-  ( class DecodeOgmios
+  ( AdditionalUtxoSet
+  , class DecodeOgmios
   , ChainTipQR(CtChainPoint, CtChainOrigin)
   , CurrentEpoch
   , DelegationsAndRewardsR
@@ -48,12 +40,19 @@ import Cardano.Kupmios.Ogmios.Types
   , decodeOgmios
   , pprintOgmiosDecodeError
   )
+import Cardano.Kupmios.QueryM (QueryM)
+import Cardano.Kupmios.QueryM.HttpUtils (handleAffjaxResponseGeneric)
 import Cardano.Provider.ServerConfig (ServerConfig, mkHttpUrl)
+import Cardano.Provider.TxEvaluation as Provider
+import Cardano.Types.CborBytes (CborBytes)
+import Cardano.Types.Chain as Chain
+import Cardano.Types.TransactionHash (TransactionHash)
+import Control.Monad.Error.Class (class MonadThrow, throwError)
+import Control.Monad.Reader.Class (asks)
 import Data.ByteArray (byteArrayToHex)
-import Data.Either (Either(Left), either)
+import Data.Either (Either(Left), either, hush)
 import Data.HTTP.Method (Method(POST))
 import Data.Lens (_Right, to, (^?))
-import Data.Map (Map)
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Newtype (unwrap, wrap)
 import Data.Time.Duration (Milliseconds(Milliseconds))
@@ -118,14 +117,14 @@ delegationsAndRewards rewardAccounts = ogmiosQueryParams
 
 evaluateTxOgmios
   :: CborBytes
-  -> Map OgmiosTxOutRef OgmiosTxOut
+  -> AdditionalUtxoSet
   -> QueryM Provider.TxEvaluationR
 evaluateTxOgmios cbor additionalUtxos = unwrap <$> ogmiosErrorHandlerWithArg
   evaluateTx
   (cbor /\ additionalUtxos)
   where
   evaluateTx
-    :: CborBytes /\ Map OgmiosTxOutRef OgmiosTxOut
+    :: CborBytes /\ AdditionalUtxoSet
     -> QueryM (Either OgmiosDecodeError OgmiosTxEvaluationR)
   evaluateTx (cbor_ /\ utxoqr) = ogmiosQueryParams "evaluateTransaction"
     { transaction: { cbor: byteArrayToHex $ unwrap cbor_ }
@@ -165,7 +164,9 @@ ogmiosPostRequest
 ogmiosPostRequest body = do
   config <- asks (_.ogmiosConfig <<< _.config)
   logTrace' $ "sending ogmios HTTP request: " <> show body
-  liftAff $ ogmiosPostRequestAff config body
+  s <- liftAff $ ogmiosPostRequestAff config body
+  logTrace' $ "response: " <> (show $ hush $ s)
+  pure s
 
 ogmiosPostRequestAff
   :: ServerConfig
