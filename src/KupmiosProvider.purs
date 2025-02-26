@@ -47,10 +47,4 @@ import Cardano.Kupmios.QueryM.Pools
   , getValidatorHashDelegationsAndRewards
   ) as X
 
-import Cardano.Kupmios.QueryM.Ogmios.Helpers
-  ( sysStartFromOgmiosTimestamp
-  , sysStartFromOgmiosTimestampUnsafe
-  , sysStartToOgmiosTimestamp
-  ) as X
-
 import Cardano.Kupmios.Logging (Logger, mkLogger, logTrace') as X
