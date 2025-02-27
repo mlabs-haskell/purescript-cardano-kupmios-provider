@@ -229,15 +229,5 @@
       # On CI, build only on available systems, to avoid errors about systems without agents.
       # Please use aarch64-linux and x86_64-darwin sparingly as they run on smaller hardware.
       herculesCI.ciSystems = [ "x86_64-linux" ];
-
-      # Schedule task to run `nix flake update`, run CI, and open a PR with changes
-      hercules-ci.flake-update = {
-        enable = true;
-        when = {
-          dayOfWeek = "Sun";
-          hour = 12;
-          minute = 45;
-        };
-      };
     });
 }
