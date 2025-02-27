@@ -1,5 +1,5 @@
 -- | This module defines utilities for working with HTTP requests
-module Cardano.Kupmios.QueryM.HttpUtils
+module Cardano.Kupmios.KupmiosM.HttpUtils
   ( handleAffjaxResponseGeneric
   ) where
 

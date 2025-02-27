@@ -1,12 +1,12 @@
 -- | CTL query layer monad.
 -- | This module defines an Aff interface for backend queries.
-module Cardano.Kupmios.QueryM
-  ( QueryM
-  , QueryEnv
-  , QueryConfig
+module Cardano.Kupmios.KupmiosM
+  ( KupmiosM
+  , KupmiosEnv
+  , KupmiosConfig
   , ClusterSetup
-  , ParQueryM
-  , QueryMT(QueryMT)
+  , ParKupmiosM
+  , KupmiosMT(KupmiosMT)
   , handleAffjaxResponse
   ) where
 
@@ -29,7 +29,7 @@ import Control.Monad.Rec.Class (class MonadRec)
 import Control.Parallel (class Parallel, parallel, sequential)
 import Control.Plus (class Plus)
 import Cardano.Kupmios.Helpers (logWithLevel)
-import Cardano.Kupmios.QueryM.HttpUtils (handleAffjaxResponseGeneric)
+import Cardano.Kupmios.KupmiosM.HttpUtils (handleAffjaxResponseGeneric)
 
 import Cardano.Provider.ServerConfig (ServerConfig)
 import Data.Either (Either)
@@ -54,14 +54,14 @@ type ClusterSetup =
       }
   }
 
--- | `QueryConfig` contains a complete specification on how to initialize a
--- | `QueryM` environment.
+-- | `KupmiosConfig` contains a complete specification on how to initialize a
+-- | `KupmiosM` environment.
 -- | It includes:
 -- | - server parameters for all the services
 -- | - network ID
 -- | - logging level
 -- | - optional custom logger
-type QueryConfig =
+type KupmiosConfig =
   { ogmiosConfig :: ServerConfig
   , kupoConfig :: ServerConfig
   , logLevel :: LogLevel
@@ -69,48 +69,48 @@ type QueryConfig =
   , suppressLogs :: Boolean
   }
 
--- | `QueryEnv` contains everything needed for `QueryM` to run.
-type QueryEnv =
-  { config :: QueryConfig
+-- | `KupmiosEnv` contains everything needed for `KupmiosM` to run.
+type KupmiosEnv =
+  { config :: KupmiosConfig
   }
 
-type QueryM = QueryMT Aff
+type KupmiosM = KupmiosMT Aff
 
-type ParQueryM = QueryMT ParAff
+type ParKupmiosM = KupmiosMT ParAff
 
-newtype QueryMT (m :: Type -> Type) (a :: Type) =
-  QueryMT (ReaderT QueryEnv m a)
+newtype KupmiosMT (m :: Type -> Type) (a :: Type) =
+  KupmiosMT (ReaderT KupmiosEnv m a)
 
-derive instance Newtype (QueryMT m a) _
-derive newtype instance Functor m => Functor (QueryMT m)
-derive newtype instance Apply m => Apply (QueryMT m)
-derive newtype instance Applicative m => Applicative (QueryMT m)
-derive newtype instance Bind m => Bind (QueryMT m)
-derive newtype instance Alt m => Alt (QueryMT m)
-derive newtype instance Plus m => Plus (QueryMT m)
-derive newtype instance Alternative m => Alternative (QueryMT m)
-derive newtype instance Monad (QueryMT Aff)
-derive newtype instance MonadEffect (QueryMT Aff)
-derive newtype instance MonadAff (QueryMT Aff)
+derive instance Newtype (KupmiosMT m a) _
+derive newtype instance Functor m => Functor (KupmiosMT m)
+derive newtype instance Apply m => Apply (KupmiosMT m)
+derive newtype instance Applicative m => Applicative (KupmiosMT m)
+derive newtype instance Bind m => Bind (KupmiosMT m)
+derive newtype instance Alt m => Alt (KupmiosMT m)
+derive newtype instance Plus m => Plus (KupmiosMT m)
+derive newtype instance Alternative m => Alternative (KupmiosMT m)
+derive newtype instance Monad (KupmiosMT Aff)
+derive newtype instance MonadEffect (KupmiosMT Aff)
+derive newtype instance MonadAff (KupmiosMT Aff)
 derive newtype instance
   ( Semigroup a
   , Apply m
   ) =>
-  Semigroup (QueryMT m a)
+  Semigroup (KupmiosMT m a)
 
 derive newtype instance
   ( Monoid a
   , Applicative m
   ) =>
-  Monoid (QueryMT m a)
+  Monoid (KupmiosMT m a)
 
-derive newtype instance MonadThrow Error (QueryMT Aff)
-derive newtype instance MonadError Error (QueryMT Aff)
-derive newtype instance MonadRec (QueryMT Aff)
-derive newtype instance MonadAsk QueryEnv (QueryMT Aff)
-derive newtype instance MonadReader QueryEnv (QueryMT Aff)
+derive newtype instance MonadThrow Error (KupmiosMT Aff)
+derive newtype instance MonadError Error (KupmiosMT Aff)
+derive newtype instance MonadRec (KupmiosMT Aff)
+derive newtype instance MonadAsk KupmiosEnv (KupmiosMT Aff)
+derive newtype instance MonadReader KupmiosEnv (KupmiosMT Aff)
 
-instance MonadLogger (QueryMT Aff) where
+instance MonadLogger (KupmiosMT Aff) where
   log msg = do
     config <- asks $ _.config
     let
@@ -120,10 +120,10 @@ instance MonadLogger (QueryMT Aff) where
 
 -- Newtype deriving complains about overlapping instances, so we wrap and
 -- unwrap manually
-instance Parallel (QueryMT ParAff) (QueryMT Aff) where
-  parallel :: QueryMT Aff ~> QueryMT ParAff
+instance Parallel (KupmiosMT ParAff) (KupmiosMT Aff) where
+  parallel :: KupmiosMT Aff ~> KupmiosMT ParAff
   parallel = wrap <<< parallel <<< unwrap
-  sequential :: QueryMT ParAff ~> QueryMT Aff
+  sequential :: KupmiosMT ParAff ~> KupmiosMT Aff
   sequential = wrap <<< sequential <<< unwrap
 
 handleAffjaxResponse

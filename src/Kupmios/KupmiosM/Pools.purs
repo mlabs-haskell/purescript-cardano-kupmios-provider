@@ -10,7 +10,7 @@ import Prelude
 
 import Cardano.AsCbor (encodeCbor)
 import Cardano.Kupmios.Helpers (liftM)
-import Cardano.Kupmios.QueryM (QueryM)
+import Cardano.Kupmios.KupmiosM (KupmiosM)
 import Cardano.Kupmios.Ogmios as Ogmios
 import Cardano.Kupmios.Ogmios.Types (PoolParameters, pprintOgmiosDecodeError)
 import Cardano.Types (PoolParams, PoolPubKeyHash, StakePubKeyHash)
@@ -33,17 +33,17 @@ import Record.Builder (build, merge)
 -- | Get pool parameters of all pools or of the provided pools.
 getStakePools
   :: Maybe (Array PoolPubKeyHash)
-  -> QueryM (Map PoolPubKeyHash PoolParameters)
+  -> KupmiosM (Map PoolPubKeyHash PoolParameters)
 getStakePools selected =
   Ogmios.poolParameters (wrap selected) >>= either
     (throwError <<< error <<< pprintOgmiosDecodeError)
     (pure <<< unwrap)
 
-getPoolIds :: QueryM (Array PoolPubKeyHash)
+getPoolIds :: KupmiosM (Array PoolPubKeyHash)
 getPoolIds = (Map.toUnfoldableUnordered >>> map fst) <$>
   getStakePools Nothing
 
-getPoolParameters :: PoolPubKeyHash -> QueryM PoolParams
+getPoolParameters :: PoolPubKeyHash -> KupmiosM PoolParams
 getPoolParameters poolPubKeyHash = do
   params <- getPoolsParameters [ poolPubKeyHash ]
   res <- liftM (error "Unable to find pool ID in the response") $ Map.lookup
@@ -52,7 +52,7 @@ getPoolParameters poolPubKeyHash = do
   pure res
 
 getPoolsParameters
-  :: Array PoolPubKeyHash -> QueryM (Map PoolPubKeyHash PoolParams)
+  :: Array PoolPubKeyHash -> KupmiosM (Map PoolPubKeyHash PoolParams)
 getPoolsParameters poolPubKeyHashes = do
   response <- getStakePools (Just poolPubKeyHashes)
   pure $ Map.mapMaybeWithKey
@@ -67,7 +67,7 @@ getPoolsParameters poolPubKeyHashes = do
     response
 
 getValidatorHashDelegationsAndRewards
-  :: StakeValidatorHash -> QueryM (Maybe DelegationsAndRewards)
+  :: StakeValidatorHash -> KupmiosM (Maybe DelegationsAndRewards)
 getValidatorHashDelegationsAndRewards skh =
   Ogmios.delegationsAndRewards [ stringRep ] >>= either
     (throwError <<< error <<< pprintOgmiosDecodeError)
@@ -81,7 +81,7 @@ getValidatorHashDelegationsAndRewards skh =
 
 -- TODO: batched variant
 getPubKeyHashDelegationsAndRewards
-  :: StakePubKeyHash -> QueryM (Maybe DelegationsAndRewards)
+  :: StakePubKeyHash -> KupmiosM (Maybe DelegationsAndRewards)
 getPubKeyHashDelegationsAndRewards pkh =
   Ogmios.delegationsAndRewards [ stringRep ] >>= either
     (throwError <<< error <<< pprintOgmiosDecodeError)

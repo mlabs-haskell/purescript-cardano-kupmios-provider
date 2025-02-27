@@ -1,12 +1,12 @@
 module KupmiosProvider (module X) where
 
-import Cardano.Kupmios.QueryM
+import Cardano.Kupmios.KupmiosM
   ( ClusterSetup
-  , ParQueryM
-  , QueryConfig
-  , QueryEnv
-  , QueryM
-  , QueryMT(QueryMT)
+  , ParKupmiosM
+  , KupmiosConfig
+  , KupmiosEnv
+  , KupmiosM
+  , KupmiosMT(KupmiosMT)
   , handleAffjaxResponse
   ) as X
 import Cardano.Kupmios.Kupo

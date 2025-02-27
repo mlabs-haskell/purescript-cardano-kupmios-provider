@@ -71,7 +71,7 @@ import Control.Monad.Except.Trans (ExceptT(ExceptT), except, runExceptT)
 import Control.Monad.Reader.Class (asks)
 import Control.Parallel (parTraverse)
 import Cardano.Provider.Affjax (request) as Affjax
-import Cardano.Kupmios.QueryM (QueryM, handleAffjaxResponse)
+import Cardano.Kupmios.KupmiosM (KupmiosM, handleAffjaxResponse)
 import Cardano.Provider.ServerConfig (ServerConfig, mkHttpUrl)
 import Data.Array (uncons)
 import Data.Array as Array
@@ -101,14 +101,14 @@ import Foreign.Object (toUnfoldable) as Object
 -- Requests
 --------------------------------------------------------------------------------
 
-utxosAt :: Address -> QueryM (Either ClientError UtxoMap)
+utxosAt :: Address -> KupmiosM (Either ClientError UtxoMap)
 utxosAt address = runExceptT do
   let endpoint = "/matches/" <> Address.toBech32 address <> "?unspent"
   kupoUtxoMap <- ExceptT $ handleAffjaxResponse <$> kupoGetRequest endpoint
   ExceptT $ resolveKupoUtxoMap kupoUtxoMap
 
 getUtxoByOref
-  :: TransactionInput -> QueryM (Either ClientError (Maybe TransactionOutput))
+  :: TransactionInput -> KupmiosM (Either ClientError (Maybe TransactionOutput))
 getUtxoByOref oref = runExceptT do
   kupoUtxoMap <- ExceptT $ handleAffjaxResponse <$> kupoGetRequest endpoint
   utxoMap <- ExceptT $ resolveKupoUtxoMap kupoUtxoMap
@@ -129,7 +129,7 @@ txHashToHex txHash = byteArrayToHex (toBytes $ unwrap txHash)
 -- | Specialized function to get addresses only, without resolving script
 -- | references. Used internally.
 getOutputAddressesByTxHash
-  :: TransactionHash -> QueryM (Either ClientError (Array Address))
+  :: TransactionHash -> KupmiosM (Either ClientError (Array Address))
 getOutputAddressesByTxHash txHash = runExceptT do
   (kupoUtxoMap :: KupoUtxoMap) <- ExceptT $ handleAffjaxResponse <$>
     kupoGetRequest endpoint
@@ -139,13 +139,13 @@ getOutputAddressesByTxHash txHash = runExceptT do
   endpoint :: String
   endpoint = "/matches/*@" <> txHashToHex txHash <> "?unspent"
 
-getDatumByHash :: DataHash -> QueryM (Either ClientError (Maybe PlutusData))
+getDatumByHash :: DataHash -> KupmiosM (Either ClientError (Maybe PlutusData))
 getDatumByHash dataHash = do
   let endpoint = "/datums/" <> byteArrayToHex (unwrap $ encodeCbor dataHash)
   kupoGetRequest endpoint
     <#> map unwrapKupoDatum <<< handleAffjaxResponse
 
-getScriptByHash :: ScriptHash -> QueryM (Either ClientError (Maybe ScriptRef))
+getScriptByHash :: ScriptHash -> KupmiosM (Either ClientError (Maybe ScriptRef))
 getScriptByHash scriptHash = do
   let
     endpoint = "/scripts/" <> byteArrayToHex (unwrap (encodeCbor scriptHash))
@@ -154,7 +154,7 @@ getScriptByHash scriptHash = do
 
 -- FIXME: This can only confirm transactions with at least one output.
 -- https://github.com/Plutonomicon/cardano-transaction-lib/issues/1293
-isTxConfirmed :: TransactionHash -> QueryM (Either ClientError (Maybe Slot))
+isTxConfirmed :: TransactionHash -> KupmiosM (Either ClientError (Maybe Slot))
 isTxConfirmed txHash = do
   config <- asks (_.kupoConfig <<< _.config)
   do
@@ -176,7 +176,7 @@ isTxConfirmedAff config txHash = runExceptT do
 
 getTxAuxiliaryData
   :: TransactionHash
-  -> QueryM (Either GetTxMetadataError AuxiliaryData)
+  -> KupmiosM (Either GetTxMetadataError AuxiliaryData)
 getTxAuxiliaryData txHash = runExceptT do
   ExceptT (lmap GetTxMetadataClientError <$> isTxConfirmed txHash) >>= case _ of
     Nothing -> throwError GetTxMetadataTxNotFoundError
@@ -332,12 +332,12 @@ instance DecodeAeson KupoUtxoMap where
           >>>
             map TransactionHash
 
-resolveKupoUtxoMap :: KupoUtxoMap -> QueryM (Either ClientError UtxoMap)
+resolveKupoUtxoMap :: KupoUtxoMap -> KupmiosM (Either ClientError UtxoMap)
 resolveKupoUtxoMap (KupoUtxoMap kupoUtxoMap) =
   runExceptT $ parTraverse (ExceptT <<< resolveKupoTxOutput) kupoUtxoMap
 
 resolveKupoTxOutput
-  :: KupoTransactionOutput -> QueryM (Either ClientError TransactionOutput)
+  :: KupoTransactionOutput -> KupmiosM (Either ClientError TransactionOutput)
 resolveKupoTxOutput (KupoTransactionOutput kupoTxOutput@{ address, amount }) =
   runExceptT $
     mkTxOutput <$> ExceptT resolveDatum <*> ExceptT resolveScriptRef
@@ -346,7 +346,7 @@ resolveKupoTxOutput (KupoTransactionOutput kupoTxOutput@{ address, amount }) =
   mkTxOutput datum scriptRef =
     TransactionOutput { address, amount, datum, scriptRef }
 
-  resolveDatum :: QueryM (Either ClientError (Maybe OutputDatum))
+  resolveDatum :: KupmiosM (Either ClientError (Maybe OutputDatum))
   resolveDatum =
     case kupoTxOutput.datumHash of
       Nothing -> pure $ Right Nothing
@@ -357,7 +357,7 @@ resolveKupoTxOutput (KupoTransactionOutput kupoTxOutput@{ address, amount }) =
         except $ pure <<< OutputDatum <$> flip note datum
           (ClientOtherError "Kupo: Failed to resolve inline datum")
 
-  resolveScriptRef :: QueryM (Either ClientError (Maybe ScriptRef))
+  resolveScriptRef :: KupmiosM (Either ClientError (Maybe ScriptRef))
   resolveScriptRef =
     case kupoTxOutput.scriptHash of
       Nothing -> pure $ Right Nothing
@@ -491,7 +491,7 @@ unwrapKupoAuxData (KupoAuxiliaryData mAuxData) = mAuxData
 --------------------------------------------------------------------------------
 
 kupoGetRequest
-  :: String -> QueryM (Either Affjax.Error (Affjax.Response String))
+  :: String -> KupmiosM (Either Affjax.Error (Affjax.Response String))
 kupoGetRequest endpoint = do
   config <- asks (_.kupoConfig <<< _.config)
   logTrace' $ "sending kupo request: " <> endpoint

@@ -40,8 +40,8 @@ import Cardano.Kupmios.Ogmios.Types
   , decodeOgmios
   , pprintOgmiosDecodeError
   )
-import Cardano.Kupmios.QueryM (QueryM)
-import Cardano.Kupmios.QueryM.HttpUtils (handleAffjaxResponseGeneric)
+import Cardano.Kupmios.KupmiosM (KupmiosM)
+import Cardano.Kupmios.KupmiosM.HttpUtils (handleAffjaxResponseGeneric)
 import Cardano.Provider.ServerConfig (ServerConfig, mkHttpUrl)
 import Cardano.Provider.TxEvaluation as Provider
 import Cardano.Types.CborBytes (CborBytes)
@@ -65,18 +65,18 @@ import Effect.Exception (Error, error)
 -- Local State Query Protocol
 -- https://ogmios.dev/mini-protocols/local-state-query/
 --------------------------------------------------------------------------------
-eraSummaries :: QueryM (Either OgmiosDecodeError OgmiosEraSummaries)
+eraSummaries :: KupmiosM (Either OgmiosDecodeError OgmiosEraSummaries)
 eraSummaries = ogmiosQueryNoParams "queryLedgerState/eraSummaries"
 
-getSystemStartTime :: QueryM (Either OgmiosDecodeError OgmiosSystemStart)
+getSystemStartTime :: KupmiosM (Either OgmiosDecodeError OgmiosSystemStart)
 getSystemStartTime = ogmiosQueryNoParams "queryNetwork/startTime"
 
 getProtocolParameters
-  :: QueryM (Either OgmiosDecodeError OgmiosProtocolParameters)
+  :: KupmiosM (Either OgmiosDecodeError OgmiosProtocolParameters)
 getProtocolParameters = ogmiosQueryNoParams
   "queryLedgerState/protocolParameters"
 
-getChainTip :: QueryM Chain.Tip
+getChainTip :: KupmiosM Chain.Tip
 getChainTip = do
   ogmiosChainTipToTip <$> ogmiosErrorHandler
     (ogmiosQueryNoParams "queryNetwork/tip")
@@ -87,10 +87,10 @@ getChainTip = do
     CtChainPoint { slot, id } -> Chain.Tip $ wrap
       { slot, blockHeaderHash: wrap $ unwrap id }
 
-currentEpoch :: QueryM (Either OgmiosDecodeError CurrentEpoch)
+currentEpoch :: KupmiosM (Either OgmiosDecodeError CurrentEpoch)
 currentEpoch = ogmiosQueryNoParams "queryLedgerState/epoch"
 
-submitTxOgmios :: TransactionHash -> CborBytes -> QueryM SubmitTxR
+submitTxOgmios :: TransactionHash -> CborBytes -> KupmiosM SubmitTxR
 submitTxOgmios txHash tx = ogmiosErrorHandlerWithArg submitTx
   (txHash /\ tx)
   where
@@ -102,13 +102,13 @@ submitTxOgmios txHash tx = ogmiosErrorHandlerWithArg submitTx
 
 poolParameters
   :: StakePoolsQueryArgument
-  -> QueryM (Either OgmiosDecodeError PoolParametersR)
+  -> KupmiosM (Either OgmiosDecodeError PoolParametersR)
 poolParameters stakePools = ogmiosQueryParams "queryLedgerState/stakePools"
   stakePools
 
 delegationsAndRewards
   :: Array String -- ^ A list of reward account bech32 strings
-  -> QueryM (Either OgmiosDecodeError DelegationsAndRewardsR)
+  -> KupmiosM (Either OgmiosDecodeError DelegationsAndRewardsR)
 delegationsAndRewards rewardAccounts = ogmiosQueryParams
   "queryLedgerState/rewardAccountSummaries"
   { query:
@@ -118,14 +118,14 @@ delegationsAndRewards rewardAccounts = ogmiosQueryParams
 evaluateTxOgmios
   :: CborBytes
   -> AdditionalUtxoSet
-  -> QueryM Provider.TxEvaluationR
+  -> KupmiosM Provider.TxEvaluationR
 evaluateTxOgmios cbor additionalUtxos = unwrap <$> ogmiosErrorHandlerWithArg
   evaluateTx
   (cbor /\ additionalUtxos)
   where
   evaluateTx
     :: CborBytes /\ AdditionalUtxoSet
-    -> QueryM (Either OgmiosDecodeError OgmiosTxEvaluationR)
+    -> KupmiosM (Either OgmiosDecodeError OgmiosTxEvaluationR)
   evaluateTx (cbor_ /\ utxoqr) = ogmiosQueryParams "evaluateTransaction"
     { transaction: { cbor: byteArrayToHex $ unwrap cbor_ }
     , additionalUtxo: utxoqr
@@ -139,7 +139,7 @@ ogmiosQueryNoParams
   :: forall a
    . DecodeOgmios a
   => String
-  -> QueryM (Either OgmiosDecodeError a)
+  -> KupmiosM (Either OgmiosDecodeError a)
 ogmiosQueryNoParams = flip ogmiosQueryParams {}
 
 ogmiosQueryParams
@@ -148,7 +148,7 @@ ogmiosQueryParams
   => EncodeAeson p
   => String
   -> p
-  -> QueryM (Either OgmiosDecodeError a)
+  -> KupmiosM (Either OgmiosDecodeError a)
 ogmiosQueryParams method params = do
   let
     body = Aeson.encodeAeson
@@ -160,7 +160,7 @@ ogmiosQueryParams method params = do
 
 ogmiosPostRequest
   :: Aeson -- ^ JSON-RPC request body
-  -> QueryM (Either Affjax.Error (Affjax.Response String))
+  -> KupmiosM (Either Affjax.Error (Affjax.Response String))
 ogmiosPostRequest body = do
   config <- asks (_.ogmiosConfig <<< _.config)
   logTrace' $ "sending ogmios HTTP request: " <> show body

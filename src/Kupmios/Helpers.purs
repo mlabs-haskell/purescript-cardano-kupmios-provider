@@ -21,7 +21,7 @@ logWithLevel
 logWithLevel lvl msg = when (msg.level >= lvl) $ log =<< prettyFormatter msg
 
 -- | Log a message from the JS side of the FFI boundary. The first `LogLevel`
--- | argument represents the configured log level (e.g. within `QueryConfig`).
+-- | argument represents the configured log level (e.g. within `KupmiosConfig`).
 -- | The second argument is the level for this particular message
 logString :: LogLevel -> LogLevel -> String -> Effect Unit
 logString cfgLevel level message = do
