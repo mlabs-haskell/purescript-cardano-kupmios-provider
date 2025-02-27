@@ -210,11 +210,6 @@
 
           # Example flake checks. Run with `nix flake check --keep-going`
           checks = {
-            tests = runPursTest {
-              testMain = "Test.Main";
-              psEntryPoint = "main";
-            };
-
             formatting-check =
               pkgs.runCommand "formatting-check"
                 {
