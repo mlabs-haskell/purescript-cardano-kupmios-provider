@@ -1,4 +1,4 @@
-module KupmiosProvider (module X) where
+module Cardano.Kupmios (module X) where
 
 import Cardano.Kupmios.KupmiosM
   ( ClusterSetup
