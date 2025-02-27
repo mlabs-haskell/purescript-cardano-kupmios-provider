@@ -199,8 +199,6 @@
                 easy-ps.pscid
                 easy-ps.psa
                 easy-ps.spago2nix
-                nodePackages.eslint
-                nodePackages.prettier
                 fd
                 git
                 nodejs-18_x
@@ -216,8 +214,6 @@
                   nativeBuildInputs = with pkgs; [
                     easy-ps.purs-tidy
                     nixpkgs-fmt
-                    nodePackages.prettier
-                    nodePackages.eslint
                     fd
                   ];
                 }
@@ -225,8 +221,6 @@
                   cd ${self}
                   purs-tidy check './src/**/*.purs' './test/**/*.purs'
                   nixpkgs-fmt --check "$(fd --no-ignore-parent -enix --exclude='spago*')"
-                  prettier --log-level warn -c $(fd --no-ignore-parent -ejs -ecjs)
-                  eslint --quiet $(fd --no-ignore-parent -ejs -ecjs) --parser-options 'sourceType: module'
                   touch $out
                 '';
           };
