@@ -54,7 +54,7 @@ constrs["TxBuildError"]="WrongSpendWitnessType, IncorrectDatumHash, IncorrectScr
 constrs["Certificate"]="StakeRegistration, StakeDeregistration, StakeDelegation, PoolRegistration, PoolRetirement, GenesisKeyDelegation, MoveInstantaneousRewardsCert"
 constrs["PlutusData"]="Constr, Map, List, Integer, Bytes"
 
-for d in "src" "test" "examples"; do
+for d in "src"; do
     echo "processing $d"
     pushd "./$d"
     command=''
