@@ -36,7 +36,7 @@ import Cardano.Provider.Error
       , GetTxMetadataMetadataEmptyOrMissingError
       )
   )
-import Cardano.Serialization.Lib (fromBytes, toBytes)
+import Cardano.Data.Lite (fromBytes, toBytes)
 import Cardano.Types
   ( Address
   , BigNum
