@@ -43,7 +43,7 @@ import Cardano.AsCbor (decodeCbor, encodeCbor)
 import Foreign.Object as Obj
 import Cardano.Kupmios.Ogmios.Helpers (sysStartFromOgmiosTimestamp, sysStartToOgmiosTimestamp)
 import Cardano.Provider.TxEvaluation (ExecutionUnits, OgmiosTxOut, OgmiosTxOutRef, RedeemerPointer, ScriptFailure(InternalLedgerTypeConversionError, NoCostModelForLanguage, UnknownInputReferencedByRedeemer, MissingRequiredDatums, ExtraRedeemers, NonScriptInputReferencedByRedeemer, ValidatorFailed, MissingRequiredScripts), TxEvaluationFailure(UnparsedError, AdditionalUtxoOverlap, ScriptFailures), TxEvaluationR(TxEvaluationR), TxEvaluationResult(TxEvaluationResult))
-import Cardano.Serialization.Lib (fromBytes, ipv4_new)
+import Cardano.Data.Lite (fromBytes, ipv4_new)
 import Cardano.Types (BigNum(BigNum), Language(PlutusV3, PlutusV2, PlutusV1), RedeemerTag, VRFKeyHash(VRFKeyHash))
 import Cardano.Types.AssetName (unAssetName)
 import Cardano.Types.BigNum (BigNum)

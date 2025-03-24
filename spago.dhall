@@ -8,7 +8,7 @@
   , "bytearrays"
   , "cardano-key-wallet"
   , "cardano-provider"
-  , "cardano-serialization-lib"
+  , "cardano-data-lite"
   , "cardano-types"
   , "console"
   , "control"

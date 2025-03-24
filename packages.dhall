@@ -84,7 +84,7 @@ let additions =
         , repo = "https://github.com/mlabs-haskell/purescript-bytearrays"
         , version = "v1.0.0"
         }
-      , cardano-serialization-lib =
+      , cardano-data-lite =
         { dependencies =
           [ "aeson"
           , "argonaut"
@@ -104,8 +104,8 @@ let additions =
           , "unsafe-coerce"
           ]
         , repo =
-            "https://github.com/mlabs-haskell/purescript-cardano-serialization-lib"
-        , version = "2cd72914b9c427b5d5b4edfd5bc08d5758a01fd4"
+            "https://github.com/mlabs-haskell/purescript-cardano-data-lite"
+        , version = "070a1a502472211853099c2566a7e9100a7b1a61"
         }
       , cardano-plutus-data-schema =
         { dependencies = [ "prelude" ]
@@ -146,7 +146,7 @@ let additions =
           , "bifunctors"
           , "bytearrays"
           , "cardano-plutus-data-schema"
-          , "cardano-serialization-lib"
+          , "cardano-data-lite"
           , "control"
           , "datetime"
           , "effect"
@@ -185,7 +185,7 @@ let additions =
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/mlabs-haskell/purescript-cardano-types.git"
-        , version = "461c1972a122d2ca54320bd3c63a62e94a0085b5"
+        , version = "5fe759a6e3d77450b3998e46fbbc17deafc69613"
         }
       , cardano-provider =
         { dependencies =
