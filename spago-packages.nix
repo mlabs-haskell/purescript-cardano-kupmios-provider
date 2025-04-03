@@ -247,11 +247,11 @@ let
 
     "cardano-provider" = pkgs.stdenv.mkDerivation {
         name = "cardano-provider";
-        version = "5c45f7def0a29b6653945e107be1b7c738d571d8";
+        version = "1146a5a59facd20716bb4c516278c70cfe5159c3";
         src = pkgs.fetchgit {
           url = "https://github.com/mlabs-haskell/purescript-cardano-provider";
-          rev = "5c45f7def0a29b6653945e107be1b7c738d571d8";
-          sha256 = "088b6x95b0g5py82179yq7i3mjhnx75ydkfca94d011bj9bj30d6";
+          rev = "1146a5a59facd20716bb4c516278c70cfe5159c3";
+          sha256 = "1a8q0rq60a5hbvpnxd8qhydp2iwyz99qwr776sqhji7j0bjc92dz";
         };
         phases = "installPhase";
         installPhase = "ln -s $src $out";

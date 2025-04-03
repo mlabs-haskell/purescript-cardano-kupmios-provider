@@ -42,6 +42,7 @@ import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect)
 import Effect.Exception (Error)
 
+-- FIXME: ClusterSetup does not belong to this repo
 -- | Cluster setup contains everything that is needed to run a `Contract` on
 -- | a local cluster: paramters to connect to the services and private keys
 -- | that are pre-funded with Ada on that cluster

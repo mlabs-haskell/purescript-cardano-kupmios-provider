@@ -1,7 +1,9 @@
 -- | Provides types and instances to create Ogmios requests and decode
 -- | its responses.
 module Cardano.Kupmios.Ogmios.Types
-  ( ChainOrigin(ChainOrigin)
+  ( module ExportOgmiosTypes
+  , AdditionalUtxoSet(AdditionalUtxoSet)
+  , ChainOrigin(ChainOrigin)
   , ChainPoint
   , ChainTipQR(CtChainOrigin, CtChainPoint)
   , CurrentEpoch(CurrentEpoch)
@@ -11,60 +13,79 @@ module Cardano.Kupmios.Ogmios.Types
   , PParamRational(PParamRational)
   , PoolParameters
   , PoolParametersR(PoolParametersR)
-  , AdditionalUtxoSet(AdditionalUtxoSet)
   , OgmiosUtxoMap
-  , decodeResult
-  , decodeErrorOrResult
-  , decodeAesonJsonRpc2Response
-  , OgmiosError(OgmiosError)
-  , pprintOgmiosDecodeError
-  , ogmiosDecodeErrorToError
-  , decodeOgmios
-  , class DecodeOgmios
-  , OgmiosDecodeError
-      ( InvalidRpcError
-      , InvalidRpcResponse
-      , ErrorResponse
-      )
   , OgmiosEraSummaries(OgmiosEraSummaries)
   , OgmiosSystemStart(OgmiosSystemStart)
-  , SubmitTxR(SubmitTxSuccess, SubmitFail)
   , StakePoolsQueryArgument(StakePoolsQueryArgument)
-  , OgmiosTxEvaluationR(OgmiosTxEvaluationR)
-  , submitSuccessPartialResp
+  , SubmitTxR(SubmitTxSuccess, SubmitFail)
   , parseIpv6String
   , rationalToSubcoin
+  , submitSuccessPartialResp
   ) where
 
 import Prelude
 
-import Aeson (class DecodeAeson, class EncodeAeson, Aeson, JsonDecodeError(TypeMismatch, MissingValue, AtKey), caseAesonArray, caseAesonObject, caseAesonString, decodeAeson, encodeAeson, fromArray, fromString, getField, getFieldOptional, getFieldOptional', isNull, printJsonDecodeError, stringifyAeson, toString, (.:), (.:?))
+import Aeson
+  ( class DecodeAeson
+  , class EncodeAeson
+  , Aeson
+  , JsonDecodeError(TypeMismatch)
+  , caseAesonArray
+  , caseAesonObject
+  , caseAesonString
+  , decodeAeson
+  , encodeAeson
+  , fromArray
+  , fromString
+  , getField
+  , isNull
+  , toString
+  , (.:)
+  , (.:?)
+  )
 import Cardano.AsCbor (decodeCbor, encodeCbor)
-import Foreign.Object as Obj
-import Cardano.Kupmios.Ogmios.Helpers (sysStartFromOgmiosTimestamp, sysStartToOgmiosTimestamp)
-import Cardano.Provider.TxEvaluation (ExecutionUnits, OgmiosTxOut, OgmiosTxOutRef, RedeemerPointer, ScriptFailure(InternalLedgerTypeConversionError, NoCostModelForLanguage, UnknownInputReferencedByRedeemer, MissingRequiredDatums, ExtraRedeemers, NonScriptInputReferencedByRedeemer, ValidatorFailed, MissingRequiredScripts), TxEvaluationFailure(UnparsedError, AdditionalUtxoOverlap, ScriptFailures), TxEvaluationR(TxEvaluationR), TxEvaluationResult(TxEvaluationResult))
 import Cardano.Data.Lite (fromBytes, ipv4_new)
-import Cardano.Types (BigNum(BigNum), Language(PlutusV3, PlutusV2, PlutusV1), RedeemerTag, VRFKeyHash(VRFKeyHash))
+import Cardano.Kupmios.Ogmios.Helpers (sysStartFromOgmiosTimestamp, sysStartToOgmiosTimestamp)
+import Cardano.Provider.OgmiosTypes
+  ( class DecodeOgmios
+  , OgmiosError
+  , OgmiosTxOut
+  , OgmiosTxOutRef
+  , decodeErrorOrResult
+  , decodeResult
+  )
+import Cardano.Provider.OgmiosTypes as ExportOgmiosTypes
+import Cardano.Types
+  ( BigNum(BigNum)
+  , Language(PlutusV3, PlutusV2, PlutusV1)
+  , VRFKeyHash(VRFKeyHash)
+  )
 import Cardano.Types.AssetName (unAssetName)
 import Cardano.Types.BigNum (BigNum)
 import Cardano.Types.BigNum (fromBigInt, fromString) as BigNum
 import Cardano.Types.Coin (Coin(Coin))
 import Cardano.Types.CostModel (CostModel(CostModel))
 import Cardano.Types.Ed25519KeyHash (Ed25519KeyHash)
-import Cardano.Types.EraSummaries (EraSummaries(EraSummaries), EraSummary(EraSummary), EraSummaryParameters(EraSummaryParameters), EraSummaryTime(EraSummaryTime))
+import Cardano.Types.EraSummaries
+  ( EraSummaries(EraSummaries)
+  , EraSummary(EraSummary)
+  , EraSummaryParameters(EraSummaryParameters)
+  , EraSummaryTime(EraSummaryTime)
+  )
 import Cardano.Types.ExUnitPrices (ExUnitPrices(ExUnitPrices))
 import Cardano.Types.ExUnits (ExUnits(ExUnits))
 import Cardano.Types.Int as Cardano
 import Cardano.Types.Ipv4 (Ipv4(Ipv4))
 import Cardano.Types.Ipv6 (Ipv6)
-import Cardano.Types.NativeScript (NativeScript(ScriptPubkey, ScriptAll, ScriptAny, ScriptNOfK, TimelockStart, TimelockExpiry))
+import Cardano.Types.NativeScript
+  ( NativeScript(ScriptPubkey, ScriptAll, ScriptAny, ScriptNOfK, TimelockStart, TimelockExpiry)
+  )
 import Cardano.Types.PlutusScript (PlutusScript(PlutusScript))
 import Cardano.Types.PoolMetadata (PoolMetadata(PoolMetadata))
 import Cardano.Types.PoolPubKeyHash (PoolPubKeyHash)
 import Cardano.Types.ProtocolParameters (ProtocolParameters(ProtocolParameters))
 import Cardano.Types.Rational (Rational, (%))
 import Cardano.Types.Rational as Rational
-import Cardano.Types.RedeemerTag (RedeemerTag(Spend, Mint, Cert, Reward, Vote, Propose)) as RedeemerTag
 import Cardano.Types.Relay (Relay(SingleHostAddr, SingleHostName, MultiHostName))
 import Cardano.Types.RewardAddress (RewardAddress)
 import Cardano.Types.RewardAddress as RewardAddress
@@ -78,16 +99,14 @@ import Cardano.Types.Value (Value, getMultiAsset, valueToCoin)
 import Control.Alt ((<|>))
 import Control.Alternative (guard)
 import Data.Array (catMaybes)
-import Data.Array (fromFoldable, length, replicate) as Array
+import Data.Array (length, replicate) as Array
 import Data.Bifunctor (bimap, lmap)
 import Data.Bitraversable (ltraverse)
 import Data.ByteArray (byteArrayFromIntArray, byteArrayToHex, hexToByteArray)
-import Data.Either (Either(Left, Right), either, note)
+import Data.Either (Either(Left), either, note)
 import Data.Foldable (fold, foldl)
 import Data.Generic.Rep (class Generic)
 import Data.Int (fromString) as Int
-import Data.List (List)
-import Data.List as List
 import Data.Map (Map, toUnfoldable)
 import Data.Map as Map
 import Data.Maybe (Maybe(Nothing, Just), fromMaybe, maybe)
@@ -97,13 +116,12 @@ import Data.String (Pattern(Pattern), Replacement(Replacement))
 import Data.String (replaceAll) as String
 import Data.String.Common (split) as String
 import Data.String.Utils as StringUtils
-import Data.These (These(That, Both), theseLeft, theseRight)
-import Data.Traversable (for, sequence, traverse)
+import Data.Traversable (for, traverse)
 import Data.Tuple (Tuple(Tuple))
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.UInt (UInt)
-import Effect.Aff (Error, error)
 import Foreign.Object (Object)
+import Foreign.Object as Obj
 import Foreign.Object as Object
 import JS.BigInt as BigInt
 import Untagged.TypeCheck (class HasRuntimeType)
@@ -450,188 +468,6 @@ decodePoolMetadata aeson = do
   url <- obj .: "url" <#> URL
   pure $ PoolMetadata { hash, url }
 
----------------- TX EVALUATION QUERY RESPONSE & PARSING
-
-type OgmiosRedeemerPtr = { index :: UInt, purpose :: String }
-
-newtype OgmiosTxEvaluationR = OgmiosTxEvaluationR TxEvaluationR
-
-derive instance Newtype OgmiosTxEvaluationR _
-derive instance Generic OgmiosTxEvaluationR _
-
-instance Show OgmiosTxEvaluationR where
-  show = genericShow
-
-instance DecodeOgmios OgmiosTxEvaluationR where
-  decodeOgmios =
-    decodeErrorOrResult
-      { parseError:
-          map
-            ( \(f :: OgmiosTxEvaluationFailure) ->
-                f # unwrap # Left # wrap # wrap
-            ) <<< decodeAeson
-      }
-      { parseResult:
-          map
-            ( \(r :: OgmiosTxEvaluationResult) -> r # unwrap # Right # wrap #
-                wrap
-            ) <<< decodeAeson
-      }
-
-newtype OgmiosTxEvaluationResult = OgmiosTxEvaluationResult TxEvaluationResult
-
-derive instance Newtype OgmiosTxEvaluationResult _
-derive instance Generic OgmiosTxEvaluationResult _
-
-instance Show OgmiosTxEvaluationResult where
-  show = genericShow
-
-instance DecodeAeson OgmiosTxEvaluationResult where
-  decodeAeson = caseAesonArray (Left (TypeMismatch "Array")) $ \array -> do
-    OgmiosTxEvaluationResult <<< TxEvaluationResult <<< Map.fromFoldable <$>
-      traverse decodeRdmrPtrExUnitsItem array
-
-    where
-    decodeRdmrPtrExUnitsItem
-      :: Aeson -> Either JsonDecodeError (RedeemerPointer /\ ExecutionUnits)
-    decodeRdmrPtrExUnitsItem elem = do
-      res
-        :: { validator :: OgmiosRedeemerPtr
-           , budget :: { memory :: BigNum, cpu :: BigNum }
-           } <- decodeAeson elem
-      redeemerPtr <- decodeRedeemerPointer res.validator
-      pure $ redeemerPtr /\ { memory: res.budget.memory, steps: res.budget.cpu }
-
-redeemerTypeMismatch :: JsonDecodeError
-redeemerTypeMismatch = TypeMismatch
-  "Expected redeemer to be one of: \
-  \(spend|mint|publish|withdraw|vote|propose)"
-
-decodeRedeemerPointer
-  :: { index :: UInt, purpose :: String }
-  -> Either JsonDecodeError RedeemerPointer
-decodeRedeemerPointer { index: redeemerIndex, purpose } =
-  note redeemerTypeMismatch $ { redeemerTag: _, redeemerIndex } <$>
-    redeemerTagFromString purpose
-
-redeemerTagFromString :: String -> Maybe RedeemerTag
-redeemerTagFromString = case _ of
-  "spend" -> Just RedeemerTag.Spend
-  "mint" -> Just RedeemerTag.Mint
-  "publish" -> Just RedeemerTag.Cert
-  "withdraw" -> Just RedeemerTag.Reward
-  "vote" -> Just RedeemerTag.Vote
-  "propose" -> Just RedeemerTag.Propose
-  _ -> Nothing
-
-newtype OgmiosScriptFailure = OgmiosScriptFailure ScriptFailure
-
-derive instance Generic OgmiosScriptFailure _
-derive instance Newtype OgmiosScriptFailure _
-
-instance Show OgmiosScriptFailure where
-  show = genericShow
-
-newtype OgmiosTxEvaluationFailure =
-  OgmiosTxEvaluationFailure TxEvaluationFailure
-
-derive instance Generic OgmiosTxEvaluationFailure _
-derive instance Newtype OgmiosTxEvaluationFailure _
-
-instance Show OgmiosTxEvaluationFailure where
-  show = genericShow
-
-instance DecodeAeson OgmiosScriptFailure where
-  decodeAeson aeson = OgmiosScriptFailure <$> do
-    err :: OgmiosError <- decodeAeson aeson
-    let error = unwrap err
-    errorData <- maybe (Left (AtKey "data" MissingValue)) pure error.data
-    case error.code of
-      3011 -> do
-        res :: { missingScripts :: Array OgmiosRedeemerPtr } <- decodeAeson
-          errorData
-        missing <- traverse decodeRedeemerPointer res.missingScripts
-        pure $ MissingRequiredScripts { missing: missing, resolved: Nothing }
-      3012 -> do
-        res :: { validationError :: String, traces :: Array String } <-
-          decodeAeson errorData
-        pure $ ValidatorFailed
-          { error: res.validationError, traces: res.traces }
-      3013 -> do
-        res
-          :: { unsuitableOutputReference ::
-                 { transaction :: { id :: String }, index :: Prim.Int }
-             } <- decodeAeson errorData
-        pure $ NonScriptInputReferencedByRedeemer
-          { index: res.unsuitableOutputReference.index
-          , txId: res.unsuitableOutputReference.transaction.id
-          }
-      3110 -> do
-        res :: { extraneousRedeemers :: Array OgmiosRedeemerPtr } <- decodeAeson
-          errorData
-        ExtraRedeemers <$> traverse decodeRedeemerPointer
-          res.extraneousRedeemers
-      3111 -> do
-        res :: { missingDatums :: Array String } <- decodeAeson errorData
-        pure $ MissingRequiredDatums
-          { missing: res.missingDatums, provided: Nothing }
-      3117 -> do
-        res
-          :: { unknownOutputReferences ::
-                 Array { transaction :: { id :: String }, index :: Prim.Int }
-             } <- decodeAeson errorData
-        pure $ UnknownInputReferencedByRedeemer $
-          map (\x -> { index: x.index, txId: x.transaction.id })
-            res.unknownOutputReferences
-      3115 -> do
-        res :: { missingCostModels :: Array String } <- decodeAeson errorData
-        pure $ NoCostModelForLanguage res.missingCostModels
-      -- this would actually fail at decoding error.data but it's good
-      3999 -> pure $ InternalLedgerTypeConversionError error.message
-      _ -> Left $ TypeMismatch $ "Unknown ogmios error code: " <> show
-        error.code
-
-instance DecodeAeson OgmiosTxEvaluationFailure where
-  decodeAeson aeson = OgmiosTxEvaluationFailure <$> do
-    error :: OgmiosError <- decodeAeson aeson
-    let code = (unwrap error).code
-    errorData <- maybe (Left (AtKey "data" MissingValue)) pure
-      (unwrap error).data
-    case code of
-      -- ScriptExecutionFailure
-      3010 -> flip (caseAesonArray (Left (TypeMismatch "Array"))) errorData $
-        ( \array ->
-            ( ScriptFailures <<< map Array.fromFoldable <<< collectIntoMap <$>
-                traverse parseElem array
-            )
-        )
-      -- Overlapping AdditionalUtxo
-      3002 -> do
-        res
-          :: { overlappingOutputReferences ::
-                 Array { transaction :: { id :: String }, index :: UInt }
-             } <- decodeAeson errorData
-        pure $ AdditionalUtxoOverlap $ map
-          (\elem -> { txId: elem.transaction.id, index: elem.index })
-          res.overlappingOutputReferences
-      -- All other errors
-      _ -> pure $ UnparsedError $ stringifyAeson aeson
-
-    where
-    parseElem elem = do
-      res :: { validator :: OgmiosRedeemerPtr, error :: OgmiosScriptFailure } <-
-        decodeAeson elem
-      (_ /\ unwrap res.error) <$> decodeRedeemerPointer res.validator
-
-    collectIntoMap :: forall k v. Ord k => Array (k /\ v) -> Map k (List v)
-    collectIntoMap = foldl
-      ( \m (k /\ v) -> Map.alter
-          (maybe (Just $ List.singleton v) (Just <<< List.Cons v))
-          k
-          m
-      )
-      Map.empty
-
 ---------------- PROTOCOL PARAMETERS QUERY RESPONSE & PARSING
 
 -- | A version of `Rational` with Aeson instance that decodes from `x/y`
@@ -924,128 +760,7 @@ instance EncodeAeson AdditionalUtxoSet where
         (\m' (k /\ v) -> Map.insert (f k) v m')
         Map.empty
 
--- Decode utilities
-
-newtype OgmiosError = OgmiosError
-  { code :: Int, message :: String, data :: Maybe Aeson }
-
-derive instance Generic OgmiosError _
-derive instance Newtype OgmiosError _
-
-instance Show OgmiosError where
-  show = genericShow
-
-pprintOgmiosError :: OgmiosError -> String
-pprintOgmiosError (OgmiosError err) = stringifyAeson $ encodeAeson err
-
-instance DecodeAeson OgmiosError where
-  decodeAeson = caseAesonObject (Left (TypeMismatch "Object"))
-    \o -> do
-      code <- getField o "code"
-      message <- getField o "message"
-      dat <- getFieldOptional o "data"
-      pure $ OgmiosError { code, message, data: dat }
-
-data OgmiosDecodeError
-  -- Server responded with error.
-  = ErrorResponse (Maybe OgmiosError)
-  -- Received JsonRpc2 error was not of the right format.
-  | InvalidRpcError JsonDecodeError
-  -- Received JsonRpc2 response was not of the right format.
-  | InvalidRpcResponse JsonDecodeError
-
-derive instance Generic OgmiosDecodeError _
-
-instance Show OgmiosDecodeError where
-  show = genericShow
-
-pprintOgmiosDecodeError :: OgmiosDecodeError -> String
-pprintOgmiosDecodeError (ErrorResponse err) = "Ogmios responded with error: " <>
-  maybe "<Actually no response>" pprintOgmiosError err
-pprintOgmiosDecodeError (InvalidRpcError err) =
-  "Ogmios error was not of the right format: " <> printJsonDecodeError err
-pprintOgmiosDecodeError (InvalidRpcResponse err) =
-  "Ogmios response was not of the right format: " <> printJsonDecodeError err
-
-ogmiosDecodeErrorToError :: OgmiosDecodeError -> Error
-ogmiosDecodeErrorToError err = error $ pprintOgmiosDecodeError err
-
--- | Variation of DecodeAeson for ogmios response, defines how to parse full ogmios reponse.
--- We usually parse just the content of the "result" field,
--- but sometimes also "error" field, hence a class other than DecodeAeson.
-class DecodeOgmios o where
-  decodeOgmios :: Aeson -> Either OgmiosDecodeError o
-
--- | Given how to parse result or error fields,
--- defines a parser of the full json2rpc response.
-makeDecodeOgmios
-  :: forall o
-   . These
-       { parseError :: Aeson -> Either JsonDecodeError o }
-       { parseResult :: Aeson -> Either JsonDecodeError o }
-  -> Aeson
-  -> Either OgmiosDecodeError o
-makeDecodeOgmios decoders aeson = do
-  json <- lmap InvalidRpcResponse $ decodeAesonJsonRpc2Response aeson
-  let merr = _.parseError <$> theseLeft decoders <*> json.error
-  let mres = _.parseResult <$> theseRight decoders <*> json.result
-  case (mres /\ merr) of
-    -- Expected result, got it
-    Just (Right x) /\ _ -> pure x
-    -- Expected result, got it in a wrong format
-    Just (Left err) /\ _ -> Left $ InvalidRpcResponse err
-    -- Got an expected error
-    _ /\ Just (Right x) -> pure x
-    -- Got an unexpected error
-    _ -> do
-      err :: Maybe OgmiosError <- sequence $
-        lmap InvalidRpcError <<< decodeAeson <$> json.error
-      Left $ ErrorResponse err
-
--- | Decode "result" field of ogmios response.
-decodeResult
-  :: forall o
-   . (Aeson -> Either JsonDecodeError o)
-  -> Aeson
-  -> Either OgmiosDecodeError o
-decodeResult decodeAeson = makeDecodeOgmios $ That { parseResult: decodeAeson }
-
--- | Decode "result" field or if absent the error field of ogmios response.
-decodeErrorOrResult
-  :: forall o
-   . { parseError :: (Aeson -> Either JsonDecodeError o) }
-  -> { parseResult :: (Aeson -> Either JsonDecodeError o) }
-  -> Aeson
-  -> Either OgmiosDecodeError o
-decodeErrorOrResult err res = makeDecodeOgmios $ Both err res
-
--- | Structure of all json rpc websocket responses
--- described in: https://ogmios.dev/getting-started/basics/
-type JsonRpc2Response =
-  { jsonrpc :: String
-  -- methodname is not always present if `error` is not empty
-  , method :: Maybe String
-  , result :: Maybe Aeson
-  , error :: Maybe Aeson
-  , id :: Maybe String
-  }
-
-decodeAesonJsonRpc2Response
-  :: Aeson -> Either JsonDecodeError JsonRpc2Response
-decodeAesonJsonRpc2Response = caseAesonObject (Left (TypeMismatch "Object")) $
-  \o -> do
-    jsonrpc <- getField o "jsonrpc"
-    method <- getFieldOptional o "method"
-    result <- getFieldOptional o "result"
-    error <- getFieldOptional o "error"
-    id <- getFieldOptional' o "id"
-    pure
-      { jsonrpc
-      , method
-      , result
-      , error
-      , id
-      }
+--
 
 -- | Provides `Show` instances for Newtypes that do not have inner parenthesis,
 -- | e.g. `BigInt`. We could optionally use a `Newtype` constraint for
