@@ -6,7 +6,6 @@
   , "arrays"
   , "bifunctors"
   , "bytearrays"
-  , "cardano-key-wallet"
   , "cardano-provider"
   , "cardano-data-lite"
   , "cardano-types"

@@ -1,10 +1,9 @@
--- | CTL query layer monad.
+-- | Kupo+Ogmios query layer monad.
 -- | This module defines an Aff interface for backend queries.
 module Cardano.Kupmios.KupmiosM
   ( KupmiosM
   , KupmiosEnv
   , KupmiosConfig
-  , ClusterSetup
   , ParKupmiosM
   , KupmiosMT(KupmiosMT)
   , handleAffjaxResponse
@@ -18,7 +17,6 @@ import Cardano.Provider.Error
   ( ClientError(ClientHttpError, ClientHttpResponseError, ClientDecodeJsonError)
   , ServiceError(ServiceOtherError)
   )
-import Cardano.Wallet.Key (PrivatePaymentKey, PrivateStakeKey)
 import Control.Alt (class Alt)
 import Control.Alternative (class Alternative)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow)
@@ -41,19 +39,6 @@ import Effect.Aff (Aff, ParAff)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect)
 import Effect.Exception (Error)
-
--- FIXME: ClusterSetup does not belong to this repo
--- | Cluster setup contains everything that is needed to run a `Contract` on
--- | a local cluster: paramters to connect to the services and private keys
--- | that are pre-funded with Ada on that cluster
-type ClusterSetup =
-  { ogmiosConfig :: ServerConfig
-  , kupoConfig :: ServerConfig
-  , keys ::
-      { payment :: PrivatePaymentKey
-      , stake :: Maybe PrivateStakeKey
-      }
-  }
 
 -- | `KupmiosConfig` contains a complete specification on how to initialize a
 -- | `KupmiosM` environment.
