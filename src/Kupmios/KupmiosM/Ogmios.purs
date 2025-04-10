@@ -20,11 +20,12 @@ import Affjax.RequestBody as Affjax.RequestBody
 import Affjax.RequestHeader as Affjax.RequestHeader
 import Affjax.ResponseFormat (string) as Affjax.ResponseFormat
 import Affjax.StatusCode (StatusCode(StatusCode))
-import Cardano.Provider.Affjax (request) as Affjax
+import Cardano.Kupmios.KupmiosM (KupmiosM)
+import Cardano.Kupmios.KupmiosM.HttpUtils (handleAffjaxResponseGeneric)
 import Cardano.Kupmios.Logging (logTrace')
 import Cardano.Kupmios.Ogmios.Types
-  ( AdditionalUtxoSet
-  , class DecodeOgmios
+  ( class DecodeOgmios
+  , AdditionalUtxoSet
   , ChainTipQR(CtChainPoint, CtChainOrigin)
   , CurrentEpoch
   , DelegationsAndRewardsR
@@ -33,17 +34,15 @@ import Cardano.Kupmios.Ogmios.Types
   , OgmiosError(OgmiosError)
   , OgmiosProtocolParameters
   , OgmiosSystemStart
-  , OgmiosTxEvaluationR
   , PoolParametersR
   , StakePoolsQueryArgument
   , SubmitTxR
   , decodeOgmios
   , pprintOgmiosDecodeError
   )
-import Cardano.Kupmios.KupmiosM (KupmiosM)
-import Cardano.Kupmios.KupmiosM.HttpUtils (handleAffjaxResponseGeneric)
+import Cardano.Provider.Affjax (request) as Affjax
+import Cardano.Provider.OgmiosTypes (TxEvaluationR)
 import Cardano.Provider.ServerConfig (ServerConfig, mkHttpUrl)
-import Cardano.Provider.TxEvaluation as Provider
 import Cardano.Types.CborBytes (CborBytes)
 import Cardano.Types.Chain as Chain
 import Cardano.Types.TransactionHash (TransactionHash)
@@ -65,6 +64,7 @@ import Effect.Exception (Error, error)
 -- Local State Query Protocol
 -- https://ogmios.dev/mini-protocols/local-state-query/
 --------------------------------------------------------------------------------
+
 eraSummaries :: KupmiosM (Either OgmiosDecodeError OgmiosEraSummaries)
 eraSummaries = ogmiosQueryNoParams "queryLedgerState/eraSummaries"
 
@@ -115,17 +115,14 @@ delegationsAndRewards rewardAccounts = ogmiosQueryParams
       { delegationsAndRewards: rewardAccounts }
   }
 
-evaluateTxOgmios
-  :: CborBytes
-  -> AdditionalUtxoSet
-  -> KupmiosM Provider.TxEvaluationR
-evaluateTxOgmios cbor additionalUtxos = unwrap <$> ogmiosErrorHandlerWithArg
+evaluateTxOgmios :: CborBytes -> AdditionalUtxoSet -> KupmiosM TxEvaluationR
+evaluateTxOgmios cbor additionalUtxos = ogmiosErrorHandlerWithArg
   evaluateTx
   (cbor /\ additionalUtxos)
   where
   evaluateTx
     :: CborBytes /\ AdditionalUtxoSet
-    -> KupmiosM (Either OgmiosDecodeError OgmiosTxEvaluationR)
+    -> KupmiosM (Either OgmiosDecodeError TxEvaluationR)
   evaluateTx (cbor_ /\ utxoqr) = ogmiosQueryParams "evaluateTransaction"
     { transaction: { cbor: byteArrayToHex $ unwrap cbor_ }
     , additionalUtxo: utxoqr

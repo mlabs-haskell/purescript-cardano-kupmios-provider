@@ -1,8 +1,7 @@
 module Cardano.Kupmios (module X) where
 
 import Cardano.Kupmios.KupmiosM
-  ( ClusterSetup
-  , ParKupmiosM
+  ( ParKupmiosM
   , KupmiosConfig
   , KupmiosEnv
   , KupmiosM

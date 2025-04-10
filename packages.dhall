@@ -194,18 +194,26 @@ let additions =
           , "aff-promise"
           , "affjax"
           , "argonaut-codecs"
+          , "arrays"
+          , "bifunctors"
           , "cardano-types"
           , "console"
           , "effect"
           , "either"
+          , "exceptions"
+          , "foldable-traversable"
+          , "lists"
           , "maybe"
           , "newtype"
           , "ordered-collections"
           , "prelude"
+          , "strings"
+          , "these"
+          , "tuples"
           , "uint"
           ]
         , repo = "https://github.com/mlabs-haskell/purescript-cardano-provider"
-        , version = "5c45f7def0a29b6653945e107be1b7c738d571d8"
+        , version = "1146a5a59facd20716bb4c516278c70cfe5159c3"
         }
       , cardano-key-wallet =
         { dependencies =
