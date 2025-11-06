@@ -7,16 +7,22 @@ module Cardano.Kupmios.KupmiosM
   , ParKupmiosM
   , KupmiosMT(KupmiosMT)
   , handleAffjaxResponse
+  , mkKupmiosEnv
   ) where
 
 import Prelude
 
 import Aeson (class DecodeAeson, decodeAeson, parseJsonStringToAeson)
 import Affjax (Error, Response) as Affjax
+import Cardano.Kupmios.Helpers (logWithLevel)
+import Cardano.Kupmios.KupmiosM.HttpUtils (handleAffjaxResponseGeneric)
 import Cardano.Provider.Error
   ( ClientError(ClientHttpError, ClientHttpResponseError, ClientDecodeJsonError)
   , ServiceError(ServiceOtherError)
   )
+import Cardano.Provider.ServerConfig (ServerConfig)
+import Concurrent.Queue (Queue)
+import Concurrent.Queue (new, write) as Queue
 import Control.Alt (class Alt)
 import Control.Alternative (class Alternative)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow)
@@ -26,15 +32,13 @@ import Control.Monad.Reader.Trans (ReaderT(ReaderT), asks)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Parallel (class Parallel, parallel, sequential)
 import Control.Plus (class Plus)
-import Cardano.Kupmios.Helpers (logWithLevel)
-import Cardano.Kupmios.KupmiosM.HttpUtils (handleAffjaxResponseGeneric)
-
-import Cardano.Provider.ServerConfig (ServerConfig)
+import Data.Array ((..))
 import Data.Either (Either)
 import Data.Log.Level (LogLevel)
 import Data.Log.Message (Message)
-import Data.Maybe (Maybe, fromMaybe)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Data.Newtype (class Newtype, unwrap, wrap)
+import Data.Traversable (traverse_)
 import Effect.Aff (Aff, ParAff)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect)
@@ -48,8 +52,13 @@ import Effect.Exception (Error)
 -- | - logging level
 -- | - optional custom logger
 type KupmiosConfig =
-  { ogmiosConfig :: ServerConfig
-  , kupoConfig :: ServerConfig
+  { ogmios ::
+      { serverConfig :: ServerConfig
+      , maxParallelRequests :: Maybe Int
+      }
+  , kupo ::
+      { serverConfig :: ServerConfig
+      }
   , logLevel :: LogLevel
   , customLogger :: Maybe (LogLevel -> Message -> Aff Unit)
   , suppressLogs :: Boolean
@@ -58,7 +67,24 @@ type KupmiosConfig =
 -- | `KupmiosEnv` contains everything needed for `KupmiosM` to run.
 type KupmiosEnv =
   { config :: KupmiosConfig
+  , ogmiosRequestSemaphore :: Maybe (Queue Unit)
   }
+
+mkKupmiosEnv :: KupmiosConfig -> Aff KupmiosEnv
+mkKupmiosEnv config =
+  case config.ogmios.maxParallelRequests of
+    Nothing ->
+      pure
+        { config
+        , ogmiosRequestSemaphore: Nothing
+        }
+    Just n -> do
+      sem <- Queue.new
+      traverse_ (const (Queue.write sem unit)) $ 1 .. n
+      pure
+        { config
+        , ogmiosRequestSemaphore: Just sem
+        }
 
 type KupmiosM = KupmiosMT Aff
 

@@ -46,8 +46,9 @@ import Cardano.Provider.ServerConfig (ServerConfig, mkHttpUrl)
 import Cardano.Types.CborBytes (CborBytes)
 import Cardano.Types.Chain as Chain
 import Cardano.Types.TransactionHash (TransactionHash)
+import Concurrent.Queue (read, write) as Queue
 import Control.Monad.Error.Class (class MonadThrow, throwError)
-import Control.Monad.Reader.Class (asks)
+import Control.Monad.Reader.Class (ask)
 import Data.ByteArray (byteArrayToHex)
 import Data.Either (Either(Left), either, hush)
 import Data.HTTP.Method (Method(POST))
@@ -56,7 +57,7 @@ import Data.Maybe (Maybe(Just, Nothing))
 import Data.Newtype (unwrap, wrap)
 import Data.Time.Duration (Milliseconds(Milliseconds))
 import Data.Tuple.Nested (type (/\), (/\))
-import Effect.Aff (Aff, delay)
+import Effect.Aff (Aff, bracket, delay)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Exception (Error, error)
 
@@ -159,11 +160,17 @@ ogmiosPostRequest
   :: Aeson -- ^ JSON-RPC request body
   -> KupmiosM (Either Affjax.Error (Affjax.Response String))
 ogmiosPostRequest body = do
-  config <- asks (_.ogmiosConfig <<< _.config)
+  { config: { ogmios: { serverConfig } }, ogmiosRequestSemaphore } <- ask
   logTrace' $ "sending ogmios HTTP request: " <> show body
-  s <- liftAff $ ogmiosPostRequestAff config body
-  logTrace' $ "response: " <> (show $ hush $ s)
-  pure s
+  let request = ogmiosPostRequestAff serverConfig body
+  resp <-
+    liftAff case ogmiosRequestSemaphore of
+      Just sem ->
+        bracket (Queue.read sem) (const (Queue.write sem unit)) $ const request
+      Nothing ->
+        request
+  logTrace' $ "response: " <> (show $ hush resp)
+  pure resp
 
 ogmiosPostRequestAff
   :: ServerConfig

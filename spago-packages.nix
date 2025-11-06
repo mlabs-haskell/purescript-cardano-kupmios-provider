@@ -185,18 +185,6 @@ let
         installPhase = "ln -s $src $out";
       };
 
-    "cardano-collateral-select" = pkgs.stdenv.mkDerivation {
-        name = "cardano-collateral-select";
-        version = "v1.0.0";
-        src = pkgs.fetchgit {
-          url = "https://github.com/mlabs-haskell/purescript-cardano-collateral-select";
-          rev = "193bf49be979b42aa1f0f9cb3d7582d6bc98e3b9";
-          sha256 = "1jbl6k779brbqzf7jf80is63b23k3mqzf2mzr222qswd3wg8s5b0";
-        };
-        phases = "installPhase";
-        installPhase = "ln -s $src $out";
-      };
-
     "cardano-data-lite" = pkgs.stdenv.mkDerivation {
         name = "cardano-data-lite";
         version = "070a1a502472211853099c2566a7e9100a7b1a61";
@@ -204,30 +192,6 @@ let
           url = "https://github.com/mlabs-haskell/purescript-cardano-data-lite";
           rev = "070a1a502472211853099c2566a7e9100a7b1a61";
           sha256 = "117ryx4w2lzkw4v8rsz7lp4nld6dd08nw2s8mcjcrw1dwrp2j4gk";
-        };
-        phases = "installPhase";
-        installPhase = "ln -s $src $out";
-      };
-
-    "cardano-key-wallet" = pkgs.stdenv.mkDerivation {
-        name = "cardano-key-wallet";
-        version = "v2.0.0";
-        src = pkgs.fetchgit {
-          url = "https://github.com/mlabs-haskell/purescript-cardano-key-wallet";
-          rev = "99d9bb7c8b291ad0bc9709d493ff7e02d14a89c0";
-          sha256 = "11jw05s7vpgg6bdyi3zy4z1fcj53a8kaaja5717b7yjgflmhfn8s";
-        };
-        phases = "installPhase";
-        installPhase = "ln -s $src $out";
-      };
-
-    "cardano-message-signing" = pkgs.stdenv.mkDerivation {
-        name = "cardano-message-signing";
-        version = "v1.0.0";
-        src = pkgs.fetchgit {
-          url = "https://github.com/mlabs-haskell/purescript-cardano-message-signing";
-          rev = "97f6f97a258ae3490df0be6b39fa6769677aa04f";
-          sha256 = "1ns7m9awn4w5amvf9ffldxk7acm73fg8clw4hja4nnl61mskqr5w";
         };
         phases = "installPhase";
         installPhase = "ln -s $src $out";
@@ -276,6 +240,18 @@ let
           url = "https://github.com/purescript/purescript-catenable-lists.git";
           rev = "09abe1f4888bc00841ad2b59e56a9e7ce7ebd4ab";
           sha256 = "0fn6caspdnb0nrlj31sy7d5hxrhndfz7a2b9wfkxf5bv5vpjyawb";
+        };
+        phases = "installPhase";
+        installPhase = "ln -s $src $out";
+      };
+
+    "concurrent-queues" = pkgs.stdenv.mkDerivation {
+        name = "concurrent-queues";
+        version = "v3.0.0";
+        src = pkgs.fetchgit {
+          url = "https://github.com/purescript-contrib/purescript-concurrent-queues.git";
+          rev = "905a0cb902dec070fa621819455363660de289c4";
+          sha256 = "0wr9fkdf23mam4ip7nwdm1i7qy0l1lysyfkffbqj07dvrgpkzd0f";
         };
         phases = "installPhase";
         installPhase = "ln -s $src $out";
