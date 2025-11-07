@@ -7,7 +7,7 @@ module Cardano.Kupmios.KupmiosM
   , ParKupmiosM
   , KupmiosMT(KupmiosMT)
   , handleAffjaxResponse
-  , mkKupmiosEnv
+  , initOgmiosRequestSemaphore
   ) where
 
 import Prelude
@@ -36,7 +36,7 @@ import Data.Array ((..))
 import Data.Either (Either)
 import Data.Log.Level (LogLevel)
 import Data.Log.Message (Message)
-import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
+import Data.Maybe (Maybe, fromMaybe)
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Traversable (traverse_)
 import Effect.Aff (Aff, ParAff)
@@ -52,13 +52,8 @@ import Effect.Exception (Error)
 -- | - logging level
 -- | - optional custom logger
 type KupmiosConfig =
-  { ogmios ::
-      { serverConfig :: ServerConfig
-      , maxParallelRequests :: Maybe Int
-      }
-  , kupo ::
-      { serverConfig :: ServerConfig
-      }
+  { ogmiosConfig :: ServerConfig
+  , kupoConfig :: ServerConfig
   , logLevel :: LogLevel
   , customLogger :: Maybe (LogLevel -> Message -> Aff Unit)
   , suppressLogs :: Boolean
@@ -70,21 +65,11 @@ type KupmiosEnv =
   , ogmiosRequestSemaphore :: Maybe (Queue Unit)
   }
 
-mkKupmiosEnv :: KupmiosConfig -> Aff KupmiosEnv
-mkKupmiosEnv config =
-  case config.ogmios.maxParallelRequests of
-    Nothing ->
-      pure
-        { config
-        , ogmiosRequestSemaphore: Nothing
-        }
-    Just n -> do
-      sem <- Queue.new
-      traverse_ (const (Queue.write sem unit)) $ 1 .. n
-      pure
-        { config
-        , ogmiosRequestSemaphore: Just sem
-        }
+initOgmiosRequestSemaphore :: Int -> Aff (Queue Unit)
+initOgmiosRequestSemaphore maxParallelRequests = do
+  sem <- Queue.new
+  traverse_ (const (Queue.write sem unit)) $ 1 .. maxParallelRequests
+  pure sem
 
 type KupmiosM = KupmiosMT Aff
 

@@ -160,9 +160,9 @@ ogmiosPostRequest
   :: Aeson -- ^ JSON-RPC request body
   -> KupmiosM (Either Affjax.Error (Affjax.Response String))
 ogmiosPostRequest body = do
-  { config: { ogmios: { serverConfig } }, ogmiosRequestSemaphore } <- ask
+  { config: { ogmiosConfig }, ogmiosRequestSemaphore } <- ask
   logTrace' $ "sending ogmios HTTP request: " <> show body
-  let request = ogmiosPostRequestAff serverConfig body
+  let request = ogmiosPostRequestAff ogmiosConfig body
   resp <-
     liftAff case ogmiosRequestSemaphore of
       Just sem ->

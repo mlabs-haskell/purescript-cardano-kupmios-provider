@@ -156,7 +156,7 @@ getScriptByHash scriptHash = do
 -- https://github.com/Plutonomicon/cardano-transaction-lib/issues/1293
 isTxConfirmed :: TransactionHash -> KupmiosM (Either ClientError (Maybe Slot))
 isTxConfirmed txHash = do
-  config <- asks (_.serverConfig <<< _.kupo <<< _.config)
+  config <- asks (_.kupoConfig <<< _.config)
   do
     -- we don't add `?unspent`, because we only care about existence of UTxOs,
     -- possibly they can be consumed
@@ -493,7 +493,7 @@ unwrapKupoAuxData (KupoAuxiliaryData mAuxData) = mAuxData
 kupoGetRequest
   :: String -> KupmiosM (Either Affjax.Error (Affjax.Response String))
 kupoGetRequest endpoint = do
-  config <- asks (_.serverConfig <<< _.kupo <<< _.config)
+  config <- asks (_.kupoConfig <<< _.config)
   logTrace' $ "sending kupo request: " <> endpoint
   liftAff $ kupoGetRequestAff config endpoint
 
