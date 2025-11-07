@@ -65,8 +65,8 @@ type KupmiosEnv =
   , ogmiosRequestSemaphore :: Maybe (Queue Unit)
   }
 
-initOgmiosRequestSemaphore :: Int -> Aff (Queue Unit)
-initOgmiosRequestSemaphore maxParallelRequests = do
+initOgmiosRequestSemaphore :: { maxParallelRequests :: Int } -> Aff (Queue Unit)
+initOgmiosRequestSemaphore { maxParallelRequests } = do
   sem <- Queue.new
   traverse_ (const (Queue.write sem unit)) $ 1 .. maxParallelRequests
   pure sem
