@@ -46,7 +46,7 @@ import Cardano.Provider.ServerConfig (ServerConfig, mkHttpUrl)
 import Cardano.Types.CborBytes (CborBytes)
 import Cardano.Types.Chain as Chain
 import Cardano.Types.TransactionHash (TransactionHash)
-import Concurrent.Queue (read, write) as Queue
+import Concurrent.BoundedQueue (isEmpty, read, write) as BoundedQueue
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.Reader.Class (ask)
 import Data.ByteArray (byteArrayToHex)
@@ -160,13 +160,26 @@ ogmiosPostRequest
   :: Aeson -- ^ JSON-RPC request body
   -> KupmiosM (Either Affjax.Error (Affjax.Response String))
 ogmiosPostRequest body = do
-  { config: { ogmiosConfig }, ogmiosRequestSemaphore } <- ask
+  { config: { ogmios }, ogmiosRequestSemaphore } <- ask
   logTrace' $ "sending ogmios HTTP request: " <> show body
-  let request = ogmiosPostRequestAff ogmiosConfig body
+  let request = ogmiosPostRequestAff ogmios.serverConfig body
   resp <-
     liftAff case ogmiosRequestSemaphore of
       Just sem ->
-        bracket (Queue.read sem) (const (Queue.write sem unit)) $ const request
+        let
+          acquireSem =
+            case ogmios.requestSemaphoreCooldown of
+              Nothing ->
+                BoundedQueue.read sem
+              Just cd ->
+                BoundedQueue.isEmpty sem >>=
+                  case _ of
+                    false ->
+                      BoundedQueue.read sem
+                    true ->
+                      delay cd *> BoundedQueue.read sem
+        in
+          bracket acquireSem (const (BoundedQueue.write sem unit)) $ const request
       Nothing ->
         request
   logTrace' $ "response: " <> (show $ hush resp)
