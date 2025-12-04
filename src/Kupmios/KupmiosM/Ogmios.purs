@@ -46,6 +46,7 @@ import Cardano.Provider.ServerConfig (ServerConfig, mkHttpUrl)
 import Cardano.Types.CborBytes (CborBytes)
 import Cardano.Types.Chain as Chain
 import Cardano.Types.TransactionHash (TransactionHash)
+import Concurrent.BoundedQueue (BoundedQueue)
 import Concurrent.BoundedQueue (isEmpty, read, write) as BoundedQueue
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.Reader.Class (ask)
@@ -53,7 +54,7 @@ import Data.ByteArray (byteArrayToHex)
 import Data.Either (Either(Left), either, hush)
 import Data.HTTP.Method (Method(POST))
 import Data.Lens (_Right, to, (^?))
-import Data.Maybe (Maybe(Just, Nothing))
+import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Newtype (unwrap, wrap)
 import Data.Time.Duration (Milliseconds(Milliseconds))
 import Data.Tuple.Nested (type (/\), (/\))
@@ -164,26 +165,28 @@ ogmiosPostRequest body = do
   logTrace' $ "sending ogmios HTTP request: " <> show body
   let request = ogmiosPostRequestAff ogmios.serverConfig body
   resp <-
-    liftAff case ogmiosRequestSemaphore of
-      Just sem ->
-        let
-          acquireSem =
-            case ogmios.requestSemaphoreCooldown of
-              Nothing ->
-                BoundedQueue.read sem
-              Just cd ->
-                BoundedQueue.isEmpty sem >>=
-                  case _ of
-                    false ->
-                      BoundedQueue.read sem
-                    true ->
-                      delay cd *> BoundedQueue.read sem
-        in
-          bracket acquireSem (const (BoundedQueue.write sem unit)) $ const request
-      Nothing ->
-        request
+    liftAff $ maybe request (\sem -> rateLimited sem ogmios.requestSemaphoreCooldown request)
+      ogmiosRequestSemaphore
   logTrace' $ "response: " <> (show $ hush resp)
   pure resp
+
+rateLimited :: forall (a :: Type). BoundedQueue Unit -> Maybe Milliseconds -> Aff a -> Aff a
+rateLimited sem cooldown =
+  bracket acquireSem (const (BoundedQueue.write sem unit))
+    <<< const
+  where
+  acquireSem :: Aff Unit
+  acquireSem =
+    case cooldown of
+      Nothing ->
+        BoundedQueue.read sem
+      Just cd ->
+        BoundedQueue.isEmpty sem >>=
+          case _ of
+            false ->
+              BoundedQueue.read sem
+            true ->
+              delay cd *> BoundedQueue.read sem
 
 ogmiosPostRequestAff
   :: ServerConfig
