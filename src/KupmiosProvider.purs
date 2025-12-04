@@ -6,8 +6,9 @@ import Cardano.Kupmios.KupmiosM
   , KupmiosEnv
   , KupmiosM
   , KupmiosMT(KupmiosMT)
+  , RateLimiter
   , handleAffjaxResponse
-  , initOgmiosRequestSemaphore
+  , initOgmiosRequestRateLimiter
   ) as X
 import Cardano.Kupmios.Kupo
   ( getDatumByHash

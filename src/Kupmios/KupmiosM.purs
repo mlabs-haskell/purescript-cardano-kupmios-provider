@@ -6,9 +6,9 @@ module Cardano.Kupmios.KupmiosM
   , KupmiosM
   , KupmiosMT(KupmiosMT)
   , ParKupmiosM
-  , Semaphore
+  , RateLimiter
   , handleAffjaxResponse
-  , initOgmiosRequestSemaphore
+  , initOgmiosRequestRateLimiter
   ) where
 
 import Prelude
@@ -56,7 +56,7 @@ import Effect.Exception (Error)
 type KupmiosConfig =
   { ogmios ::
       { serverConfig :: ServerConfig
-      , requestSemaphoreCooldown :: Maybe Milliseconds
+      , requestRateLimiterCooldown :: Maybe Milliseconds
       }
   , kupo ::
       { serverConfig :: ServerConfig
@@ -69,13 +69,13 @@ type KupmiosConfig =
 -- | `KupmiosEnv` contains everything needed for `KupmiosM` to run.
 type KupmiosEnv =
   { config :: KupmiosConfig
-  , ogmiosRequestSemaphore :: Maybe Semaphore
+  , ogmiosRequestRateLimiter :: Maybe RateLimiter
   }
 
-type Semaphore = BoundedQueue Unit
+type RateLimiter = BoundedQueue Unit
 
-initOgmiosRequestSemaphore :: { maxParallelRequests :: Int } -> Aff Semaphore
-initOgmiosRequestSemaphore { maxParallelRequests } = do
+initOgmiosRequestRateLimiter :: { maxParallelRequests :: Int } -> Aff RateLimiter
+initOgmiosRequestRateLimiter { maxParallelRequests } = do
   sem <- BoundedQueue.new maxParallelRequests
   traverse_ (const (BoundedQueue.write sem unit)) $ 1 .. maxParallelRequests
   pure sem

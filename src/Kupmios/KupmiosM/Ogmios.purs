@@ -161,12 +161,12 @@ ogmiosPostRequest
   :: Aeson -- ^ JSON-RPC request body
   -> KupmiosM (Either Affjax.Error (Affjax.Response String))
 ogmiosPostRequest body = do
-  { config: { ogmios }, ogmiosRequestSemaphore } <- ask
+  { config: { ogmios }, ogmiosRequestRateLimiter } <- ask
   logTrace' $ "sending ogmios HTTP request: " <> show body
   let request = ogmiosPostRequestAff ogmios.serverConfig body
   resp <-
-    liftAff $ maybe request (\sem -> rateLimited sem ogmios.requestSemaphoreCooldown request)
-      ogmiosRequestSemaphore
+    liftAff $ maybe request (\sem -> rateLimited sem ogmios.requestRateLimiterCooldown request)
+      ogmiosRequestRateLimiter
   logTrace' $ "response: " <> (show $ hush resp)
   pure resp
 

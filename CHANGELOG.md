@@ -11,8 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 - `KupmiosConfig` and `KupmiosEnv` types. Ogmios cannot handle a high number of
 parallel HTTP requests, so we now limit concurrency using a semaphore managed
 within `KupmiosEnv`. The semaphore can be initialized with
-`initOgmiosRequestSemaphore`. Additionally, users can configure
-`requestSemaphoreCooldown` in `KupmiosConfig` to further throttle requests that
+`initOgmiosRequestRateLimiter`. Additionally, users can configure
+`requestRateLimiterCooldown` in `KupmiosConfig` to further throttle requests that
 exceed the semaphore limit. Note that this solution is intended as a temporary
 workaround, so contributions are more than welcome.
 
