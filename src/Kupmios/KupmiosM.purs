@@ -1,22 +1,29 @@
 -- | Kupo+Ogmios query layer monad.
 -- | This module defines an Aff interface for backend queries.
 module Cardano.Kupmios.KupmiosM
-  ( KupmiosM
-  , KupmiosEnv
+  ( KupmiosEnv
   , KupmiosConfig
-  , ParKupmiosM
+  , KupmiosM
   , KupmiosMT(KupmiosMT)
+  , ParKupmiosM
+  , RateLimiter
   , handleAffjaxResponse
+  , initOgmiosRequestRateLimiter
   ) where
 
 import Prelude
 
 import Aeson (class DecodeAeson, decodeAeson, parseJsonStringToAeson)
 import Affjax (Error, Response) as Affjax
+import Cardano.Kupmios.Helpers (logWithLevel)
+import Cardano.Kupmios.KupmiosM.HttpUtils (handleAffjaxResponseGeneric)
 import Cardano.Provider.Error
   ( ClientError(ClientHttpError, ClientHttpResponseError, ClientDecodeJsonError)
   , ServiceError(ServiceOtherError)
   )
+import Cardano.Provider.ServerConfig (ServerConfig)
+import Concurrent.BoundedQueue (BoundedQueue)
+import Concurrent.BoundedQueue (new, write) as BoundedQueue
 import Control.Alt (class Alt)
 import Control.Alternative (class Alternative)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow)
@@ -26,15 +33,14 @@ import Control.Monad.Reader.Trans (ReaderT(ReaderT), asks)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Parallel (class Parallel, parallel, sequential)
 import Control.Plus (class Plus)
-import Cardano.Kupmios.Helpers (logWithLevel)
-import Cardano.Kupmios.KupmiosM.HttpUtils (handleAffjaxResponseGeneric)
-
-import Cardano.Provider.ServerConfig (ServerConfig)
+import Data.Array ((..))
 import Data.Either (Either)
 import Data.Log.Level (LogLevel)
 import Data.Log.Message (Message)
 import Data.Maybe (Maybe, fromMaybe)
 import Data.Newtype (class Newtype, unwrap, wrap)
+import Data.Time.Duration (Milliseconds)
+import Data.Traversable (traverse_)
 import Effect.Aff (Aff, ParAff)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect)
@@ -48,8 +54,13 @@ import Effect.Exception (Error)
 -- | - logging level
 -- | - optional custom logger
 type KupmiosConfig =
-  { ogmiosConfig :: ServerConfig
-  , kupoConfig :: ServerConfig
+  { ogmios ::
+      { serverConfig :: ServerConfig
+      , requestRateLimiterCooldown :: Maybe Milliseconds
+      }
+  , kupo ::
+      { serverConfig :: ServerConfig
+      }
   , logLevel :: LogLevel
   , customLogger :: Maybe (LogLevel -> Message -> Aff Unit)
   , suppressLogs :: Boolean
@@ -58,7 +69,16 @@ type KupmiosConfig =
 -- | `KupmiosEnv` contains everything needed for `KupmiosM` to run.
 type KupmiosEnv =
   { config :: KupmiosConfig
+  , ogmiosRequestRateLimiter :: Maybe RateLimiter
   }
+
+type RateLimiter = BoundedQueue Unit
+
+initOgmiosRequestRateLimiter :: { maxParallelRequests :: Int } -> Aff RateLimiter
+initOgmiosRequestRateLimiter { maxParallelRequests } = do
+  sem <- BoundedQueue.new maxParallelRequests
+  traverse_ (const (BoundedQueue.write sem unit)) $ 1 .. maxParallelRequests
+  pure sem
 
 type KupmiosM = KupmiosMT Aff
 

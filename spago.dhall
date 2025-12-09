@@ -9,6 +9,7 @@
   , "cardano-provider"
   , "cardano-data-lite"
   , "cardano-types"
+  , "concurrent-queues"
   , "console"
   , "control"
   , "datetime"

@@ -34,8 +34,7 @@ import Data.Maybe (isJust)
 import Data.Newtype (unwrap, wrap)
 import Effect.Aff (Aff)
 
-providerForKupmiosBackend
-  :: (forall (a :: Type). KupmiosM a -> Aff a) -> Provider
+providerForKupmiosBackend :: (forall (a :: Type). KupmiosM a -> Aff a) -> Provider
 providerForKupmiosBackend runKupmiosM =
   { getDatumByHash: runKupmiosM <<< Kupo.getDatumByHash
   , getScriptByHash: runKupmiosM <<< Kupo.getScriptByHash

@@ -46,17 +46,19 @@ import Cardano.Provider.ServerConfig (ServerConfig, mkHttpUrl)
 import Cardano.Types.CborBytes (CborBytes)
 import Cardano.Types.Chain as Chain
 import Cardano.Types.TransactionHash (TransactionHash)
+import Concurrent.BoundedQueue (BoundedQueue)
+import Concurrent.BoundedQueue (isEmpty, read, write) as BoundedQueue
 import Control.Monad.Error.Class (class MonadThrow, throwError)
-import Control.Monad.Reader.Class (asks)
+import Control.Monad.Reader.Class (ask)
 import Data.ByteArray (byteArrayToHex)
 import Data.Either (Either(Left), either, hush)
 import Data.HTTP.Method (Method(POST))
 import Data.Lens (_Right, to, (^?))
-import Data.Maybe (Maybe(Just, Nothing))
+import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Newtype (unwrap, wrap)
 import Data.Time.Duration (Milliseconds(Milliseconds))
 import Data.Tuple.Nested (type (/\), (/\))
-import Effect.Aff (Aff, delay)
+import Effect.Aff (Aff, bracket, delay)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Exception (Error, error)
 
@@ -159,11 +161,32 @@ ogmiosPostRequest
   :: Aeson -- ^ JSON-RPC request body
   -> KupmiosM (Either Affjax.Error (Affjax.Response String))
 ogmiosPostRequest body = do
-  config <- asks (_.ogmiosConfig <<< _.config)
+  { config: { ogmios }, ogmiosRequestRateLimiter } <- ask
   logTrace' $ "sending ogmios HTTP request: " <> show body
-  s <- liftAff $ ogmiosPostRequestAff config body
-  logTrace' $ "response: " <> (show $ hush $ s)
-  pure s
+  let request = ogmiosPostRequestAff ogmios.serverConfig body
+  resp <-
+    liftAff $ maybe request (\sem -> rateLimited sem ogmios.requestRateLimiterCooldown request)
+      ogmiosRequestRateLimiter
+  logTrace' $ "response: " <> (show $ hush resp)
+  pure resp
+
+rateLimited :: forall (a :: Type). BoundedQueue Unit -> Maybe Milliseconds -> Aff a -> Aff a
+rateLimited sem cooldown =
+  bracket acquireSem (const (BoundedQueue.write sem unit))
+    <<< const
+  where
+  acquireSem :: Aff Unit
+  acquireSem =
+    case cooldown of
+      Nothing ->
+        BoundedQueue.read sem
+      Just cd ->
+        BoundedQueue.isEmpty sem >>=
+          case _ of
+            false ->
+              BoundedQueue.read sem
+            true ->
+              delay cd *> BoundedQueue.read sem
 
 ogmiosPostRequestAff
   :: ServerConfig
