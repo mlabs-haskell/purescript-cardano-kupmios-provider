@@ -1,13 +1,15 @@
 module Cardano.Kupmios.Ogmios
-  ( getSystemStartTime
-  , getChainTip
-  , currentEpoch
-  , submitTxOgmios
-  , poolParameters
+  ( currentEpoch
   , delegationsAndRewards
   , eraSummaries
-  , getProtocolParameters
   , evaluateTxOgmios
+  , getChainTip
+  , getProtocolParameters
+  , getSystemStartTime
+  , ogmiosQueryNoParams
+  , ogmiosQueryParams
+  , poolParameters
+  , submitTxOgmios
   ) where
 
 import Prelude
