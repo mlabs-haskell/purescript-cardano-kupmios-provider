@@ -28,6 +28,8 @@ import Cardano.Kupmios.Ogmios
   , getChainTip
   , getProtocolParameters
   , getSystemStartTime
+  , ogmiosQueryNoParams
+  , ogmiosQueryParams
   , poolParameters
   , submitTxOgmios
   ) as X
