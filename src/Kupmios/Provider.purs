@@ -3,6 +3,7 @@ module Cardano.Kupmios.Provider where
 import Prelude
 
 import Cardano.AsCbor (encodeCbor)
+import Cardano.Kupmios.KupmiosM (KupmiosM)
 import Cardano.Kupmios.Kupo
   ( getDatumByHash
   , getOutputAddressesByTxHash
@@ -12,27 +13,25 @@ import Cardano.Kupmios.Kupo
   , isTxConfirmed
   , utxosAt
   ) as Kupo
-import Cardano.Kupmios.Ogmios
-  ( evaluateTxOgmios
-  , getChainTip
-  , submitTxOgmios
-  ) as Ogmios
+import Cardano.Kupmios.Ogmios (evaluateTxOgmios, getChainTip, submitTxOgmios) as Ogmios
 import Cardano.Kupmios.Ogmios.CurrentEpoch (getCurrentEpoch) as Ogmios
 import Cardano.Kupmios.Ogmios.EraSummaries (getEraSummaries) as Ogmios
+import Cardano.Kupmios.Ogmios.Governance (getProposalById) as Ogmios
 import Cardano.Kupmios.Ogmios.Pools
   ( getPoolIds
   , getPubKeyHashDelegationsAndRewards
   , getValidatorHashDelegationsAndRewards
   ) as Ogmios
 import Cardano.Kupmios.Ogmios.Types (SubmitTxR(SubmitFail, SubmitTxSuccess))
-import Cardano.Kupmios.KupmiosM (KupmiosM)
 import Cardano.Provider.Error (ClientError(ClientOtherError))
 import Cardano.Provider.Type (Provider)
 import Cardano.Types.Transaction (hash) as Transaction
+import Control.Monad.Error.Class (throwError)
 import Data.Either (Either(Left, Right))
 import Data.Maybe (isJust)
 import Data.Newtype (unwrap, wrap)
 import Effect.Aff (Aff)
+import Effect.Exception (error)
 
 providerForKupmiosBackend :: (forall (a :: Type). KupmiosM a -> Aff a) -> Provider
 providerForKupmiosBackend runKupmiosM =
@@ -69,4 +68,11 @@ providerForKupmiosBackend runKupmiosM =
   , getValidatorHashDelegationsAndRewards: \_ validatorHash ->
       Right <$> runKupmiosM
         (Ogmios.getValidatorHashDelegationsAndRewards $ wrap validatorHash)
+  , getProposalById: \proposalRef ->
+      Right <$> runKupmiosM
+        (Ogmios.getProposalById proposalRef)
+  , getVotesOnProposal: \_ ->
+      throwError $ error "Kupmios provider: getVotesOnProposal not implemented"
+  , getRegisteredDrepInfo: \_ ->
+      throwError $ error "Kupmios provider: getRegisteredDrepInfo not implemented"
   }
