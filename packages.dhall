@@ -185,7 +185,7 @@ let additions =
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/mlabs-haskell/purescript-cardano-types.git"
-        , version = "5fe759a6e3d77450b3998e46fbbc17deafc69613"
+        , version = "27e07553aaf2ec0d7b58a83623171fa9c8c292c7"
         }
       , cardano-provider =
         { dependencies =
@@ -197,7 +197,6 @@ let additions =
           , "arrays"
           , "bifunctors"
           , "cardano-types"
-          , "console"
           , "effect"
           , "either"
           , "exceptions"
@@ -213,7 +212,7 @@ let additions =
           , "uint"
           ]
         , repo = "https://github.com/mlabs-haskell/purescript-cardano-provider"
-        , version = "1146a5a59facd20716bb4c516278c70cfe5159c3"
+        , version = "0e01dd87e0b3b0c98c5544f97252748c3cfc992d"
         }
       , cardano-key-wallet =
         { dependencies =

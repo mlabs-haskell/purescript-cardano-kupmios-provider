@@ -13,6 +13,7 @@ module Cardano.Kupmios.Ogmios.Types
   , PParamRational(PParamRational)
   , PoolParameters
   , PoolParametersR(PoolParametersR)
+  , OgmiosAdaLovelace
   , OgmiosUtxoMap
   , OgmiosEraSummaries(OgmiosEraSummaries)
   , OgmiosSystemStart(OgmiosSystemStart)
