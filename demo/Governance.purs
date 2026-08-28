@@ -7,7 +7,9 @@ import Prelude
 import Cardano.AsCbor (decodeCbor)
 import Cardano.Kupmios (KupmiosM, KupmiosMT(KupmiosMT))
 import Cardano.Kupmios.Provider (providerForKupmiosBackend)
-import Control.Monad.Error.Class (liftMaybe)
+import Cardano.Types (GovId(GovCredential))
+import Cardano.Types.GovId (fromBech32) as GovId
+import Control.Monad.Error.Class (liftMaybe, throwError)
 import Control.Monad.Reader (runReaderT)
 import Data.ByteArray (hexToByteArray)
 import Data.Log.Level (LogLevel(Trace))
@@ -48,6 +50,14 @@ main =
     liftEffect $ log $ "Proposal: " <> show proposal
     votes <- provider.getVotesOnProposal proposalRef
     liftEffect $ log $ "Votes: " <> show votes
+    govId <-
+      liftMaybe (error "Could not decode GovId from Bech32 string") $
+        GovId.fromBech32 "drep1ytwmwvtd0a8lr45ssner2tjxzv5y8q03w3606yeald9mdmgmwecja"
+    case govId of
+      GovCredential { cred: drepCred } -> do
+        drepInfo <- provider.getRegisteredDrepInfo drepCred
+        liftEffect $ log $ "DRep info: " <> show drepInfo
+      _ -> throwError $ error "Unexpected GovId"
 
 runner :: forall (a :: Type). String -> KupmiosM a -> Aff a
 runner ogmiosHost (KupmiosMT action) =

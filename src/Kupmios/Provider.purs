@@ -16,7 +16,11 @@ import Cardano.Kupmios.Kupo
 import Cardano.Kupmios.Ogmios (evaluateTxOgmios, getChainTip, submitTxOgmios) as Ogmios
 import Cardano.Kupmios.Ogmios.CurrentEpoch (getCurrentEpoch) as Ogmios
 import Cardano.Kupmios.Ogmios.EraSummaries (getEraSummaries) as Ogmios
-import Cardano.Kupmios.Ogmios.Governance (getProposalById, getVotesOnProposal) as Ogmios
+import Cardano.Kupmios.Ogmios.Governance
+  ( getProposalById
+  , getRegisteredDrepInfo
+  , getVotesOnProposal
+  ) as Ogmios
 import Cardano.Kupmios.Ogmios.Pools
   ( getPoolIds
   , getPubKeyHashDelegationsAndRewards
@@ -26,12 +30,10 @@ import Cardano.Kupmios.Ogmios.Types (SubmitTxR(SubmitFail, SubmitTxSuccess))
 import Cardano.Provider.Error (ClientError(ClientOtherError))
 import Cardano.Provider.Type (Provider)
 import Cardano.Types.Transaction (hash) as Transaction
-import Control.Monad.Error.Class (throwError)
 import Data.Either (Either(Left, Right))
 import Data.Maybe (isJust)
 import Data.Newtype (unwrap, wrap)
 import Effect.Aff (Aff)
-import Effect.Exception (error)
 
 providerForKupmiosBackend :: (forall (a :: Type). KupmiosM a -> Aff a) -> Provider
 providerForKupmiosBackend runKupmiosM =
@@ -74,6 +76,7 @@ providerForKupmiosBackend runKupmiosM =
   , getVotesOnProposal: \proposalRef ->
       Right <$> runKupmiosM
         (Ogmios.getVotesOnProposal proposalRef)
-  , getRegisteredDrepInfo: \_ ->
-      throwError $ error "Kupmios provider: getRegisteredDrepInfo not implemented"
+  , getRegisteredDrepInfo: \drepCred ->
+      Right <$> runKupmiosM
+        (Ogmios.getRegisteredDrepInfo drepCred)
   }

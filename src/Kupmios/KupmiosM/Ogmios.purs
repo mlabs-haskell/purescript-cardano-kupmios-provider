@@ -6,6 +6,7 @@ module Cardano.Kupmios.Ogmios
   , getChainTip
   , getProposalById
   , getProtocolParameters
+  , getRegisteredDrepInfo
   , getSystemStartTime
   , getVotesOnProposal
   , ogmiosQueryNoParams
@@ -71,6 +72,7 @@ import Cardano.Provider
       , TreasuryWithdrawal
       )
   , VoteOnProposal
+  , DrepInfo
   )
 import Cardano.Provider.Affjax (request) as Affjax
 import Cardano.Provider.OgmiosTypes (TxEvaluationR)
@@ -91,7 +93,7 @@ import Concurrent.BoundedQueue (BoundedQueue)
 import Concurrent.BoundedQueue (isEmpty, read, write) as BoundedQueue
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.Reader.Class (ask)
-import Data.Array (length, singleton) as Array
+import Data.Array (catMaybes, length, singleton) as Array
 import Data.ByteArray (byteArrayToHex, hexToByteArray)
 import Data.Either (Either(Left), either, note)
 import Data.HTTP.Method (Method(POST))
@@ -270,10 +272,86 @@ unwrapOgmiosVotesOnProposal :: OgmiosVotesOnProposal -> Array VoteOnProposal
 unwrapOgmiosVotesOnProposal = unwrap
 
 getVotesOnProposal
-  :: GovernanceActionId -> KupmiosM (Either OgmiosDecodeError (Array VoteOnProposal))
+  :: GovernanceActionId
+  -> KupmiosM (Either OgmiosDecodeError (Array VoteOnProposal))
 getVotesOnProposal proposalRef =
   map unwrapOgmiosVotesOnProposal <$> ogmiosQueryParams "queryLedgerState/governanceProposals"
     (ProposalReferenceArgument proposalRef)
+
+--
+
+newtype DrepCredentialArgument = DrepCredentialArgument Credential
+
+derive instance Newtype DrepCredentialArgument _
+
+instance EncodeAeson DrepCredentialArgument where
+  encodeAeson (DrepCredentialArgument drepCred) =
+    case drepCred of
+      PubKeyHashCredential pkh ->
+        encodeAeson
+          { scripts: ([] :: Array String)
+          , keys:
+              [ byteArrayToHex $ unwrap $ encodeCbor pkh
+              ]
+          }
+      ScriptHashCredential sh ->
+        encodeAeson
+          { scripts:
+              [ byteArrayToHex $ unwrap $ encodeCbor sh
+              ]
+          , keys: ([] :: Array String)
+          }
+
+newtype OgmiosDrepInfo = OgmiosDrepInfo (Maybe DrepInfo)
+
+derive instance Newtype OgmiosDrepInfo _
+
+instance DecodeOgmios OgmiosDrepInfo where
+  decodeOgmios = decodeResult decodeAeson
+
+instance DecodeAeson OgmiosDrepInfo where
+  decodeAeson =
+    caseAesonArray (Left $ TypeMismatch "Array") $ \xs -> do
+      dreps <- Array.catMaybes <$> traverse
+        ( \drepAeson ->
+            caseAesonObject (Left $ TypeMismatch "Object")
+              ( \obj -> do
+                  type_ <- getField obj "type"
+                  if type_ == "registered" then do
+                    deposit <- do
+                      (depositRaw :: OgmiosAdaLovelace) <- getField obj "deposit"
+                      pure $ Coin depositRaw.ada.lovelace
+                    votingPower <- do
+                      (stake :: OgmiosAdaLovelace) <- getField obj "stake"
+                      pure $ Coin stake.ada.lovelace
+                    pure $ Just $ wrap $ Just
+                      { deposit
+                      , votingPower
+                      }
+                  else
+                    pure Nothing
+              )
+              drepAeson
+        )
+        xs
+      case dreps of
+        [] -> pure $ wrap Nothing
+        [ drep ] -> pure drep
+        _ ->
+          Left $ TypeMismatch $ "Expected one DRep entry, got " <>
+            show (Array.length dreps)
+
+unwrapOgmiosDrepInfo :: OgmiosDrepInfo -> Maybe DrepInfo
+unwrapOgmiosDrepInfo = unwrap
+
+getRegisteredDrepInfo
+  :: Credential
+  -> KupmiosM (Either OgmiosDecodeError (Maybe DrepInfo))
+getRegisteredDrepInfo drepCred =
+  map unwrapOgmiosDrepInfo <$> ogmiosQueryParams "queryLedgerState/delegateRepresentatives"
+    (DrepCredentialArgument drepCred)
+
+--
 
 eraSummaries :: KupmiosM (Either OgmiosDecodeError OgmiosEraSummaries)
 eraSummaries = ogmiosQueryNoParams "queryLedgerState/eraSummaries"
