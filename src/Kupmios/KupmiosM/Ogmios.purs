@@ -7,6 +7,7 @@ module Cardano.Kupmios.Ogmios
   , getProposalById
   , getProtocolParameters
   , getSystemStartTime
+  , getVotesOnProposal
   , ogmiosQueryNoParams
   , ogmiosQueryParams
   , poolParameters
@@ -35,7 +36,7 @@ import Affjax.RequestBody as Affjax.RequestBody
 import Affjax.RequestHeader as Affjax.RequestHeader
 import Affjax.ResponseFormat (string) as Affjax.ResponseFormat
 import Affjax.StatusCode (StatusCode(StatusCode))
-import Cardano.AsCbor (encodeCbor)
+import Cardano.AsCbor (decodeCbor, encodeCbor)
 import Cardano.Kupmios.KupmiosM (KupmiosM)
 import Cardano.Kupmios.KupmiosM.HttpUtils (handleAffjaxResponseGeneric)
 import Cardano.Kupmios.Logging (logTrace')
@@ -69,13 +70,21 @@ import Cardano.Provider
       , ChangeProtocolParameters
       , TreasuryWithdrawal
       )
+  , VoteOnProposal
   )
 import Cardano.Provider.Affjax (request) as Affjax
 import Cardano.Provider.OgmiosTypes (TxEvaluationR)
 import Cardano.Provider.ServerConfig (ServerConfig, mkHttpUrl)
-import Cardano.Types (Coin(Coin), GovernanceActionId(GovernanceActionId))
+import Cardano.Types
+  ( Coin(Coin)
+  , Credential(PubKeyHashCredential, ScriptHashCredential)
+  , GovernanceActionId(GovernanceActionId)
+  , Vote(VoteNo, VoteYes, VoteAbstain)
+  , Voter(Cc, Drep, Spo)
+  )
 import Cardano.Types.CborBytes (CborBytes)
 import Cardano.Types.Chain as Chain
+import Cardano.Types.Ed25519KeyHash (fromBech32) as Ed25519KeyHash
 import Cardano.Types.RewardAddress (fromBech32) as RewardAddress
 import Cardano.Types.TransactionHash (TransactionHash)
 import Concurrent.BoundedQueue (BoundedQueue)
@@ -83,18 +92,20 @@ import Concurrent.BoundedQueue (isEmpty, read, write) as BoundedQueue
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.Reader.Class (ask)
 import Data.Array (length, singleton) as Array
-import Data.ByteArray (byteArrayToHex)
+import Data.ByteArray (byteArrayToHex, hexToByteArray)
 import Data.Either (Either(Left), either, note)
 import Data.HTTP.Method (Method(POST))
 import Data.Lens (_Right, to, (^?))
 import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Time.Duration (Milliseconds(Milliseconds))
+import Data.Traversable (traverse)
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.UInt (toInt) as UInt
 import Effect.Aff (Aff, bracket, delay)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Exception (Error, error)
+import Foreign.Object (Object)
 
 --------------------------------------------------------------------------------
 -- Local State Query Protocol
@@ -181,6 +192,87 @@ proposalTypeFromOgmiosString =
 getProposalById :: GovernanceActionId -> KupmiosM (Either OgmiosDecodeError (Maybe Proposal))
 getProposalById proposalRef =
   map unwrapOgmiosProposal <$> ogmiosQueryParams "queryLedgerState/governanceProposals"
+    (ProposalReferenceArgument proposalRef)
+
+--
+
+voteFromOgmiosString :: String -> Maybe Vote
+voteFromOgmiosString =
+  case _ of
+    "no" -> Just VoteNo
+    "yes" -> Just VoteYes
+    "abstain" -> Just VoteAbstain
+    _ -> Nothing
+
+newtype OgmiosVotesOnProposal = OgmiosVotesOnProposal (Array VoteOnProposal)
+
+derive instance Newtype OgmiosVotesOnProposal _
+
+instance DecodeOgmios OgmiosVotesOnProposal where
+  decodeOgmios = decodeResult decodeAeson
+
+instance DecodeAeson OgmiosVotesOnProposal where
+  decodeAeson =
+    caseAesonArray (Left $ TypeMismatch "Array")
+      case _ of
+        [] -> pure $ wrap []
+        [ proposalAeson ] ->
+          caseAesonObject (Left $ TypeMismatch "Object")
+            ( \obj -> do
+                (voteObjects :: Array (Object Aeson)) <- getField obj "votes"
+                votes <- traverse decodeOgmiosVote voteObjects
+                pure $ wrap votes
+            )
+            proposalAeson
+        xs ->
+          Left $ TypeMismatch $ "Expected one proposal, got " <> show (Array.length xs)
+    where
+    decodeOgmiosVote :: Object Aeson -> Either JsonDecodeError VoteOnProposal
+    decodeOgmiosVote obj = do
+      voteRaw <- getField obj "vote"
+      vote <- note (TypeMismatch "Expected string repr of Vote") $ voteFromOgmiosString voteRaw
+      voterObj <- getField obj "issuer"
+      voterRole <- getField voterObj "role"
+      credType <- getField voterObj "from"
+      credRaw <- getField voterObj "id"
+      -- TODO: Should we handle genesisDelegate?
+      voter <- case voterRole of
+        "constitutionalCommittee" ->
+          Cc <$> decodeCredential credType credRaw
+        "delegateRepresentative" ->
+          Drep <$> decodeCredential credType credRaw
+        "stakePoolOperator" -> do
+          pkh <- note (TypeMismatch "Expected Bech32-encoded stake pool pkh") $
+            Ed25519KeyHash.fromBech32 credRaw
+          pure $ Spo pkh
+        _ ->
+          Left $ TypeMismatch $ "Unexpected voter role: " <> voterRole
+      pure { voter, vote }
+      where
+      decodeCredential :: String -> String -> Either JsonDecodeError Credential
+      decodeCredential credType cred =
+        case credType of
+          "verificationKey" ->
+            note (TypeMismatch "Expected Base16-encoded Ed25519KeyHash bytes")
+              ( PubKeyHashCredential <$>
+                  (decodeCbor <<< wrap =<< hexToByteArray cred)
+              )
+          "script" ->
+            note (TypeMismatch "Expected Base16-encoded ScriptHash bytes")
+              ( ScriptHashCredential <$>
+                  (decodeCbor <<< wrap =<< hexToByteArray cred)
+              )
+          _ ->
+            Left $ TypeMismatch $ "Unexpected credential type: "
+              <> credType
+
+unwrapOgmiosVotesOnProposal :: OgmiosVotesOnProposal -> Array VoteOnProposal
+unwrapOgmiosVotesOnProposal = unwrap
+
+getVotesOnProposal
+  :: GovernanceActionId -> KupmiosM (Either OgmiosDecodeError (Array VoteOnProposal))
+getVotesOnProposal proposalRef =
+  map unwrapOgmiosVotesOnProposal <$> ogmiosQueryParams "queryLedgerState/governanceProposals"
     (ProposalReferenceArgument proposalRef)
 
 eraSummaries :: KupmiosM (Either OgmiosDecodeError OgmiosEraSummaries)

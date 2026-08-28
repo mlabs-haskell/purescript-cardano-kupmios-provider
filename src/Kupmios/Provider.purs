@@ -16,7 +16,7 @@ import Cardano.Kupmios.Kupo
 import Cardano.Kupmios.Ogmios (evaluateTxOgmios, getChainTip, submitTxOgmios) as Ogmios
 import Cardano.Kupmios.Ogmios.CurrentEpoch (getCurrentEpoch) as Ogmios
 import Cardano.Kupmios.Ogmios.EraSummaries (getEraSummaries) as Ogmios
-import Cardano.Kupmios.Ogmios.Governance (getProposalById) as Ogmios
+import Cardano.Kupmios.Ogmios.Governance (getProposalById, getVotesOnProposal) as Ogmios
 import Cardano.Kupmios.Ogmios.Pools
   ( getPoolIds
   , getPubKeyHashDelegationsAndRewards
@@ -71,8 +71,9 @@ providerForKupmiosBackend runKupmiosM =
   , getProposalById: \proposalRef ->
       Right <$> runKupmiosM
         (Ogmios.getProposalById proposalRef)
-  , getVotesOnProposal: \_ ->
-      throwError $ error "Kupmios provider: getVotesOnProposal not implemented"
+  , getVotesOnProposal: \proposalRef ->
+      Right <$> runKupmiosM
+        (Ogmios.getVotesOnProposal proposalRef)
   , getRegisteredDrepInfo: \_ ->
       throwError $ error "Kupmios provider: getRegisteredDrepInfo not implemented"
   }

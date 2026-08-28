@@ -46,6 +46,8 @@ main =
           }
     proposal <- provider.getProposalById proposalRef
     liftEffect $ log $ "Proposal: " <> show proposal
+    votes <- provider.getVotesOnProposal proposalRef
+    liftEffect $ log $ "Votes: " <> show votes
 
 runner :: forall (a :: Type). String -> KupmiosM a -> Aff a
 runner ogmiosHost (KupmiosMT action) =
