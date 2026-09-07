@@ -7,11 +7,14 @@ import Prelude
 import Cardano.AsCbor (decodeCbor)
 import Cardano.Kupmios (KupmiosM, KupmiosMT(KupmiosMT))
 import Cardano.Kupmios.Provider (providerForKupmiosBackend)
+import Cardano.Provider (pprintClientError)
 import Cardano.Types (GovId(GovCredential))
 import Cardano.Types.GovId (fromBech32) as GovId
 import Control.Monad.Error.Class (liftMaybe, throwError)
 import Control.Monad.Reader (runReaderT)
 import Data.ByteArray (hexToByteArray)
+import Data.Either (Either(Left, Right))
+import Data.FoldableWithIndex (forWithIndex_)
 import Data.Log.Level (LogLevel(Trace))
 import Data.Maybe (Maybe(Nothing), fromJust, fromMaybe)
 import Data.Newtype (wrap)
@@ -49,6 +52,13 @@ main =
     proposal <- provider.getProposalById proposalRef
     liftEffect $ log $ "Proposal: " <> show proposal
     votes <- provider.getVotesOnProposal proposalRef
+    case votes of
+      Left err ->
+        throwError $ error $ "getVotesOnProposal failed with error: "
+          <> pprintClientError err
+      Right votes' ->
+        forWithIndex_ votes' \i vote ->
+          liftEffect $ log $ "Vote #" <> show i <> ": " <> show vote
     liftEffect $ log $ "Votes: " <> show votes
     govId <-
       liftMaybe (error "Could not decode GovId from Bech32 string") $
