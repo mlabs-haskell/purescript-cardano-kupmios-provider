@@ -1,4 +1,4 @@
-.PHONY: check-explicit-exports check-format format clean build
+.PHONY: check-explicit-exports check-format format clean build demo
 
 ps-sources := $(shell fd --no-ignore-parent -epurs)
 nix-sources := $(shell fd --no-ignore-parent -enix --exclude='spago*')
@@ -35,3 +35,6 @@ clean:
 
 build:
 	@spago build --purs-args ${purs-args}
+
+demo:
+	spago run --main Demo.Cardano.Kupmios.Governance

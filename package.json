@@ -1,0 +1,12 @@
+{
+  "type": "module",
+  "name": "cardano-kupmios-provider",
+  "version": "3.1.0", 
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlabs-haskell/purescript-cardano-kupmios-provider"
+  },
+  "dependencies": {
+    "@mlabs-haskell/ctl-npm-meta": "2.0.0"
+  }
+}

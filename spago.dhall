@@ -26,6 +26,7 @@
   , "maybe"
   , "monad-logger"
   , "newtype"
+  , "node-process"
   , "ordered-collections"
   , "parallel"
   , "partial"
@@ -41,5 +42,5 @@
   , "untagged-union"
   ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs" ]
+, sources = [ "src/**/*.purs", "demo/**/*.purs" ]
 }

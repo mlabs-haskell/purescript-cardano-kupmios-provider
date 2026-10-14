@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and we follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# v4.0.0
+
+## Added
+
+- Implemented `getProposalById`, `getVotesOnProposal`, and `getRegisteredDrepInfo` `Provider` governance queries, backed by Ogmios. Added a governance demo under `demo/Governance.purs` ([#6](https://github.com/mlabs-haskell/purescript-cardano-kupmios-provider/pull/6))
+
 # v3.1.0
 
 ## Added

@@ -3,6 +3,7 @@ module Cardano.Kupmios.Provider where
 import Prelude
 
 import Cardano.AsCbor (encodeCbor)
+import Cardano.Kupmios.KupmiosM (KupmiosM)
 import Cardano.Kupmios.Kupo
   ( getDatumByHash
   , getOutputAddressesByTxHash
@@ -12,20 +13,20 @@ import Cardano.Kupmios.Kupo
   , isTxConfirmed
   , utxosAt
   ) as Kupo
-import Cardano.Kupmios.Ogmios
-  ( evaluateTxOgmios
-  , getChainTip
-  , submitTxOgmios
-  ) as Ogmios
+import Cardano.Kupmios.Ogmios (evaluateTxOgmios, getChainTip, submitTxOgmios) as Ogmios
 import Cardano.Kupmios.Ogmios.CurrentEpoch (getCurrentEpoch) as Ogmios
 import Cardano.Kupmios.Ogmios.EraSummaries (getEraSummaries) as Ogmios
+import Cardano.Kupmios.Ogmios.Governance
+  ( getProposalById
+  , getRegisteredDrepInfo
+  , getVotesOnProposal
+  ) as Ogmios
 import Cardano.Kupmios.Ogmios.Pools
   ( getPoolIds
   , getPubKeyHashDelegationsAndRewards
   , getValidatorHashDelegationsAndRewards
   ) as Ogmios
 import Cardano.Kupmios.Ogmios.Types (SubmitTxR(SubmitFail, SubmitTxSuccess))
-import Cardano.Kupmios.KupmiosM (KupmiosM)
 import Cardano.Provider.Error (ClientError(ClientOtherError))
 import Cardano.Provider.Type (Provider)
 import Cardano.Types.Transaction (hash) as Transaction
@@ -69,4 +70,13 @@ providerForKupmiosBackend runKupmiosM =
   , getValidatorHashDelegationsAndRewards: \_ validatorHash ->
       Right <$> runKupmiosM
         (Ogmios.getValidatorHashDelegationsAndRewards $ wrap validatorHash)
+  , getProposalById: \proposalRef ->
+      Right <$> runKupmiosM
+        (Ogmios.getProposalById proposalRef)
+  , getVotesOnProposal: \proposalRef ->
+      Right <$> runKupmiosM
+        (Ogmios.getVotesOnProposal proposalRef)
+  , getRegisteredDrepInfo: \drepCred ->
+      Right <$> runKupmiosM
+        (Ogmios.getRegisteredDrepInfo drepCred)
   }
